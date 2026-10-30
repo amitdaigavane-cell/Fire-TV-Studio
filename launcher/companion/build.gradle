@@ -1,0 +1,17 @@
+plugins { id 'com.android.application' }
+android {
+    namespace 'com.veyra.tvmanager'
+    compileSdk 34
+    defaultConfig { applicationId 'com.veyra.tvmanager'; minSdk 28; targetSdk 34; versionCode 5; versionName '1.4'; testInstrumentationRunner 'com.veyra.tvmanager.StudioInstrumentation' }
+    compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
+    lint { disable 'ExpiredTargetSdkVersion' }
+    sourceSets.main.java.srcDir '../common/src/main/java'
+    sourceSets.main.assets.srcDir layout.buildDirectory.dir('bundled')
+}
+tasks.register('bundleLauncher', Copy) {
+    dependsOn ':app:assembleDebug'
+    from project(':app').layout.buildDirectory.file('outputs/apk/debug/app-debug.apk')
+    into layout.buildDirectory.dir('bundled')
+    rename { 'TV-Home.apk' }
+}
+tasks.named('preBuild').configure { dependsOn 'bundleLauncher' }
