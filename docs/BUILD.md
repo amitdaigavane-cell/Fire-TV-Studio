@@ -50,3 +50,10 @@ java -cp build/home-signal com.gathin.tvhome.HomeSignalTest
 ```
 
 They cover the observed YouTube app-UID Home intent, other app UIDs, exact Home components/categories, existing-task resume events, and Settings/external-launch bypass guards.
+
+### Home idle policy
+
+```text
+javac -d build/home-idle launcher/app/src/main/java/com/gathin/tvhome/HomeIdlePolicy.java tests/HomeIdlePolicyTest.java
+java -cp build/home-idle com.gathin.tvhome.HomeIdlePolicyTest
+```

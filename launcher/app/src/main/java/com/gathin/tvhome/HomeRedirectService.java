@@ -317,13 +317,13 @@ public class HomeRedirectService extends AccessibilityService {
                         WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
                         WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN | WindowManager.LayoutParams.FLAG_FULLSCREEN
                                 | WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED,
-                        // Alpha-zero OPAQUE windows still obscure lower windows in Android 9
-                        // power policy, suppressing the player's KEEP_SCREEN_ON request.
-                        PixelFormat.TRANSLUCENT);
+                        // Hidden windows are INVISIBLE, not alpha-zero opaque surfaces.
+                        PixelFormat.OPAQUE);
                 params.setTitle("TV Home instant surface");
                 ((WindowManager)getSystemService(WINDOW_SERVICE)).addView(overlay, params);
                 windowAdded = true;
             }
+            overlay.setVisibility(android.view.View.VISIBLE);
             attached = true;
             overlay.setSurfaceActive(true);
             overlay.setImportantForAccessibility(android.view.View.IMPORTANT_FOR_ACCESSIBILITY_AUTO);
@@ -341,13 +341,13 @@ public class HomeRedirectService extends AccessibilityService {
         handler.removeCallbacks(refreshVisibleHome);
         if (!attached || overlay == null) return;
         overlay.dismissMenu();
-        // Retain the rendered buffer for the next Home return. Removing and re-adding
-        // this window cost almost a second on the 1 GB stick. A transparent window must
-        // never own remote input or expose invisible accessibility controls.
+        // Retain lightweight view state, but release the hidden window's rendering surface.
+        // INVISIBLE also removes it from power policy; alpha zero alone does not.
         overlay.setSurfaceActive(false);
         overlay.setImportantForAccessibility(android.view.View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);
         attached = false;
         overlayPassThrough(true);
+        overlay.setVisibility(android.view.View.INVISIBLE);
     }
     private void destroyOverlay() {
         hideOverlay();
@@ -373,7 +373,7 @@ public class HomeRedirectService extends AccessibilityService {
         WindowManager.LayoutParams params = (WindowManager.LayoutParams)overlay.getLayoutParams();
         int flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE;
         int updated=value ? params.flags | flags : params.flags & ~flags;
-        float alpha=attached ? 1f : 0f;
+        float alpha=1f;
         if(params.flags==updated && params.alpha==alpha)return;
         params.flags=updated;params.alpha=alpha;
         ((WindowManager)getSystemService(WINDOW_SERVICE)).updateViewLayout(overlay, params);
@@ -412,6 +412,8 @@ public class HomeRedirectService extends AccessibilityService {
         // Keep one interactive window throughout Home use. The activity is an anchor for app
         // launches and a fallback when the service is disabled; there is no timed UI handoff.
         s.showOverlay();
+        surface.setSurfaceActive(false);
+        surface.setVisibility(android.view.View.INVISIBLE);
         surface.refresh();
         surface.restorePage(s.overlay.page());
         surface.restoreSelection(s.overlay.selection(),s.overlay.scrollPosition());
@@ -522,6 +524,8 @@ public class HomeRedirectService extends AccessibilityService {
         resumedActivity = null;
         queuedExternalIntent = null;
         if(instance==this)instance=null;
+        MainActivity current=MainActivity.currentHome();
+        if(current!=null&&current.isHomeResumed()){current.surface().setVisibility(android.view.View.VISIBLE);current.surface().setSurfaceActive(true);}
         super.onDestroy();
     }
 

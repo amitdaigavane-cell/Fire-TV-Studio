@@ -1,3 +1,19 @@
+# Validation — Studio 1.6 / TV Home 4.6
+
+30 October 2026. Tested on the same AFTSS / Fire OS 7.7.1.7 / ARMv7 stick. Bounded checks, not universal performance or zero-flash guarantees.
+
+- Both APKs compile and Android Lint passes with zero errors. Phone frontend checks pass; no JavaScript errors or horizontal overflow.
+- Thirty Home-return checks, six computer-helper checks, and idle-policy boundary/reset checks pass.
+- Physical idle test: after two minutes on Home, the black screen with dim clock appeared. The first key dismissed it without opening an app. The fifteen-minute deadline is covered by the policy test; an uninterrupted fifteen-minute physical wait was not performed.
+- Classic, Cinema and Panel each passed opening YouTube, returning through Back to our resumed Home activity, opening Settings, and sleep/wake recovery. Sampled return-video frames showed direct YouTube-to-custom-Home transitions; sampling cannot exclude an unsampled frame. Theme settings were restored after testing.
+- While YouTube was open, the Home overlay reported `mViewVisibility=0x4` (INVISIBLE), `mHasSurface=false`, no input focus and no keep-screen-on flag. This confirms actual surface release rather than alpha-only hiding. The underlying Home activity UI is hidden while the overlay owns Home.
+- No global sleep/screensaver timeout was changed. Apps still control their own keep-awake behavior. Manual sleep/wake and Home return remain subject to Fire OS permissions and startup timing.
+- APKs contain no native ABI-specific libraries. The TV APK embedded in Studio matches the standalone TV APK.
+
+Performance depends on app, memory pressure and firmware. Removing the retained buffer addresses identified graphics overhead; no controlled frame-rate benchmark or long movie-length endurance test is claimed. The idle clock reduces static bright imagery, not guaranteed burn-in prevention.
+
+---
+
 # Validation — Studio 1.5 / TV Home 4.5
 
 30 October 2026. Checks are bounded; they do not establish perfect behavior on every app or firmware.

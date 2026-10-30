@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.6.0 — 30 October 2026
+
+- Release the hidden Home window’s drawing surface with INVISIBLE instead of retaining an alpha-zero translucent buffer. Keep its view hierarchy for reuse and pause inactive work.
+- Hide the duplicate activity UI while the service owns Home. Opaque rendering is used only for visible Home, avoiding unnecessary drawing underneath it.
+- Optional Home-only idle screen: dim moving clock on black after 2 minutes, system sleep after 15 idle minutes. First key dismisses without opening an app. Toggle from TV Customize or phone Themes. No global sleep timeout changes; apps retain their own playback behavior.
+- Preserve manual Sleep, service repair and early Home-return routing.
+- Studio 1.6 embeds TV Home 4.6. No guarantee against burn-in or stock Home exposure during cold boot/service failure.
+
+
 ## 1.5.0 — 30 October 2026
 
 - Handle app-initiated Home intents regardless of the caller app, including the YouTube Back-to-Home request observed on Fire TV.

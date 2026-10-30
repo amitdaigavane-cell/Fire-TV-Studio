@@ -29,6 +29,7 @@ public final class HomeSurface extends FrameLayout {
     private long builtRevision=-1;
     private boolean rebuilding;
     private boolean surfaceActive=true;
+    private HomeIdle idle;
     private String layout="classic", wallpaperKey="";
     private boolean animations;
     private final ArrayList<View> sideNav=new ArrayList<>();
@@ -40,7 +41,7 @@ public final class HomeSurface extends FrameLayout {
 
     public HomeSurface(Context context) {
         super(context); prefs=context.getSharedPreferences("tvhome",Context.MODE_PRIVATE);
-        setFocusable(true); setFocusableInTouchMode(true); setClipChildren(false);setOnFocusChangeListener((v,f)->{if(f)heading(null);}); refresh();
+        setFocusable(true); setFocusableInTouchMode(true); setClipChildren(false);setOnFocusChangeListener((v,f)->{if(f)heading(null);}); refresh();idle=new HomeIdle(this);
     }
     private int dp(float v){return Math.round(v*getResources().getDisplayMetrics().density);}
     private TextView text(String value,float size,int color){TextView t=new TextView(getContext());t.setText(value);t.setTextSize(size);t.setTextColor(color);t.setTypeface(Typeface.create("sans-serif",Typeface.NORMAL));t.setIncludeFontPadding(false);return t;}
@@ -77,7 +78,7 @@ public final class HomeSurface extends FrameLayout {
     private void saveDock(){prefs.edit().putString("dock",String.join(",",pinned)).apply();changed();}
 
     private void build(){
-        cinemaGreeting=null;rebuilding=true;if(weather!=null)WeatherInfo.unbind(weather);dismissMenu();removeAllViews();targets.clear();nav.clear();
+        if(idle!=null)idle.stop();cinemaGreeting=null;rebuilding=true;if(weather!=null)WeatherInfo.unbind(weather);dismissMenu();removeAllViews();targets.clear();nav.clear();
         layout=StudioConfig.layout(getContext());animations=StudioConfig.flag(getContext(),"animations");sideNav.clear();wallpaperKey=StudioConfig.wallpaper(getContext());setBackground(HomeWallpaper.background(getContext()));
         if(!layout.equals("classic")){buildAlternative();return;}
         scroll=new ScrollView(getContext());scroll.setFillViewport(true);scroll.setClipToPadding(false);scroll.setVerticalScrollBarEnabled(false);
@@ -108,7 +109,7 @@ public final class HomeSurface extends FrameLayout {
         if(rest.isEmpty()&&!cinema&&!compact)content.addView(text(page.equals("hidden")?"No hidden apps. Use an app’s Menu to hide it.":"Your apps are all in Favorites.",13,MUTED),lp(-1,44));
         LinearLayout footer=row();LinearLayout.LayoutParams fp=lp(-1,38);fp.topMargin=dp(4);content.addView(footer,fp);footer.addView(text(StudioConfig.flag(getContext(),"showStatus")?networkStatus()+"  ·  "+storageStatus():"",11,MUTED),new LinearLayout.LayoutParams(0,-2,1));
         ArrayList<View> powerNav=new ArrayList<>();nav.add(powerNav);if(TvInputs.visible(getContext()))footer.addView(button("Inputs","inputs",this::inputsMenu,powerNav),spaced(92,34,12));if(StudioConfig.flag(getContext(),"showPower"))footer.addView(button("Power","power",this::powerMenu,powerNav),spaced(92,34,20));
-        wireNavigation();rebuilding=false;if(surfaceActive&&isAttachedToWindow())WeatherInfo.bind(weather);post(()->restoreSelection(selected,0));
+        wireNavigation();rebuilding=false;if(surfaceActive&&isAttachedToWindow())WeatherInfo.bind(weather);post(()->{restoreSelection(selected,0);updateIdle();});
     }
     private TextView brand(int size){String name=StudioConfig.read(getContext()).optString("homeName","HOME");TextView label=text(name,name.length()>12?13:size,accent());label.setSingleLine();label.setEllipsize(android.text.TextUtils.TruncateAt.END);label.setContentDescription(name);return label;}
     private TextView utility(String label,String key,Runnable action,List<View> group){TextView b=button(label,key,action,group);StateListDrawable bg=new StateListDrawable();GradientDrawable focus=shape(0xff243a49,12);focus.setStroke(dp(1),accent());bg.addState(new int[]{android.R.attr.state_focused},focus);bg.addState(new int[]{},new ColorDrawable(Color.TRANSPARENT));b.setBackground(bg);b.setContentDescription(key.equals("customize")?"Customize":key.equals("settings")?"Settings":label);b.setSingleLine();b.setEllipsize(android.text.TextUtils.TruncateAt.END);b.setTextSize(label.length()==1?21:12);b.setOnFocusChangeListener((v,f)->{if(f){selected=key;heading(null);if(subtitle!=null&&label.length()==1){subtitle.setText(b.getContentDescription());subtitle.setVisibility(VISIBLE);}}});return b;}
@@ -147,7 +148,7 @@ public final class HomeSurface extends FrameLayout {
         }
         if(visible.isEmpty())content.addView(text("No apps here yet. Manage your apps in Studio.",14,MUTED),lp(-1,54));footer();wireNavigation();
         if(!sideNav.isEmpty()){for(int i=0;i<sideNav.size();i++){View v=sideNav.get(i);v.setNextFocusUpId(sideNav.get(Math.max(0,i-1)).getId());v.setNextFocusDownId(sideNav.get(Math.min(sideNav.size()-1,i+1)).getId());v.setNextFocusLeftId(v.getId());v.setNextFocusRightId(nav.isEmpty()?v.getId():nav.get(0).get(0).getId());}for(ArrayList<View> group:nav)group.get(0).setNextFocusLeftId(sideNav.get(0).getId());}
-        rebuilding=false;if(surfaceActive&&isAttachedToWindow())WeatherInfo.bind(weather);post(()->restoreSelection(selected,0));
+        rebuilding=false;if(surfaceActive&&isAttachedToWindow())WeatherInfo.bind(weather);post(()->{restoreSelection(selected,0);updateIdle();});
     }
     private LinearLayout cinemaTile(App a,List<View> group){LinearLayout wrap=vertical();wrap.setClipChildren(false);wrap.setClipToPadding(false);wrap.setPadding(dp(6),dp(8),dp(6),0);FrameLayout tile=new FrameLayout(getContext());StateListDrawable dockFocus=new StateListDrawable();GradientDrawable ring=shape(0xff393247,16);ring.setStroke(dp(2),accent());dockFocus.addState(new int[]{android.R.attr.state_focused},ring);dockFocus.addState(new int[]{},shape(0x40374458,16));tile.setBackground(dockFocus);tile.setFocusable(true);tile.setClickable(true);tile.setId(View.generateViewId());tile.setContentDescription(a.name);wrap.addView(tile,lp(-1,72));ImageView image=new ImageView(getContext());image.setImageDrawable(a.art);image.setScaleType(ImageView.ScaleType.FIT_CENTER);image.setPadding(dp(10),dp(10),dp(10),dp(10));tile.addView(image,new LayoutParams(-1,-1));TextView label=text(a.name,12,WHITE);label.setGravity(Gravity.CENTER);label.setSingleLine();label.setEllipsize(android.text.TextUtils.TruncateAt.END);LinearLayout.LayoutParams title=lp(-1,22);title.topMargin=dp(6);wrap.addView(label,title);targets.put(a.pkg,tile);group.add(tile);tile.setOnFocusChangeListener((v,f)->{motion(v,f);if(f&&!rebuilding){selected=a.pkg;heading(a.name);}});tile.setOnClickListener(v->launch(new Intent(Intent.ACTION_MAIN).setComponent(a.component).addFlags(Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED)));tile.setOnLongClickListener(v->{appMenu(a);return true;});tile.setOnKeyListener((v,k,e)->{if(k==KeyEvent.KEYCODE_MENU&&e.getAction()==KeyEvent.ACTION_DOWN){appMenu(a);return true;}return false;});return wrap;}
     private void section(String title,String detail){LinearLayout r=row();LinearLayout.LayoutParams p=lp(-1,22);p.topMargin=dp(4);content.addView(r,p);TextView n=text(title,10,MUTED);n.setLetterSpacing(.16f);r.addView(n,new LinearLayout.LayoutParams(0,-2,1));r.addView(text(detail,10,MUTED));}
@@ -183,9 +184,11 @@ public final class HomeSurface extends FrameLayout {
         int index=pinned.indexOf(app.pkg);if(index>0){labels.add("Move left");actions.add(()->{Collections.swap(pinned,index,index-1);saveDock();});}if(index>=0&&index<pinned.size()-1){labels.add("Move right");actions.add(()->{Collections.swap(pinned,index,index+1);saveDock();});}
         labels.add(isHidden?"Show on Home":"Hide from Home");actions.add(()->{if(isHidden)hidden.remove(app.pkg);else hidden.add(app.pkg);prefs.edit().putStringSet("hidden_v3",new HashSet<>(hidden)).apply();changed();});labels.add("App settings");actions.add(()->launch(new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,Uri.parse("package:"+app.pkg))));menu(app.name,labels,actions);
     }
+    private void idleMenu(){menu("Home idle screen",Arrays.asList("On: dim at 2 min, sleep at 15 min","Off: use Fire OS idle settings"),Arrays.asList(()->setIdle(true),()->setIdle(false)));}
+    private void setIdle(boolean enabled){try{StudioConfig.save(getContext(),StudioConfig.read(getContext()).put("idleScreen",enabled));}catch(Exception e){Toast.makeText(getContext(),"Could not save idle setting",Toast.LENGTH_SHORT).show();}}
     private void customize(){
-        List<String> names=new ArrayList<>(Arrays.asList("Home screen","Themes","Hidden apps","Network settings"));
-        List<Runnable> actions=new ArrayList<>(Arrays.asList(this::homeMenu,this::themeMenu,()->{page="hidden";selected="all";build();},()->launch(new Intent(Settings.ACTION_WIFI_SETTINGS))));
+        List<String> names=new ArrayList<>(Arrays.asList("Home screen","Themes","Home idle screen","Hidden apps","Network settings"));
+        List<Runnable> actions=new ArrayList<>(Arrays.asList(this::homeMenu,this::themeMenu,this::idleMenu,()->{page="hidden";selected="all";build();},()->launch(new Intent(Settings.ACTION_WIFI_SETTINGS))));
         if(StudioConfig.theme(getContext()).optJSONArray("wallpapers").length()>1){names.add("Next wallpaper");actions.add(()->{String key="wallpaper_index_"+StudioConfig.theme(getContext()).optString("id");prefs.edit().putInt(key,prefs.getInt(key,0)+1).apply();setBackground(HomeWallpaper.background(getContext()));});}
         menu("Make yourself at home",names,actions);
     }
@@ -230,6 +233,7 @@ public final class HomeSurface extends FrameLayout {
     }
     public void goHome(){dismissMenu();selected="";if(!page.equals("home")){page="home";build();}else{requestFocus();scroll.scrollTo(0,0);}}
     @Override public boolean dispatchKeyEvent(KeyEvent e){
+        if(idle!=null&&idle.key(e))return true;
         if(e.getKeyCode()==KeyEvent.KEYCODE_BACK){if(e.getAction()==KeyEvent.ACTION_UP)goHome();return true;}
         if(findFocus()==this){
             int key=e.getKeyCode();
@@ -249,11 +253,14 @@ public final class HomeSurface extends FrameLayout {
     private String storageStatus(){StatFs fs=new StatFs(getContext().getFilesDir().getPath());return String.format(Locale.getDefault(),"%.1f GB free",fs.getAvailableBytes()/1073741824.0);}
     void setSurfaceActive(boolean active){
         surfaceActive=active;removeCallbacks(wallpaperTick);
+        updateIdle();
         if(!active){if(weather!=null)WeatherInfo.unbind(weather);}
         else if(isAttachedToWindow())post(wallpaperTick);
     }
-    @Override protected void onAttachedToWindow(){super.onAttachedToWindow();if(weather!=null)WeatherInfo.bind(weather);removeCallbacks(wallpaperTick);postDelayed(wallpaperTick,60000);}
-    @Override protected void onWindowVisibilityChanged(int visibility){super.onWindowVisibilityChanged(visibility);if(wallpaperTick!=null){removeCallbacks(wallpaperTick);if(surfaceActive&&visibility==VISIBLE&&isAttachedToWindow())post(wallpaperTick);}}
-    @Override protected void onDetachedFromWindow(){removeCallbacks(wallpaperTick);if(weather!=null)WeatherInfo.unbind(weather);super.onDetachedFromWindow();}
+    private void updateIdle(){if(idle!=null)idle.active(surfaceActive&&isAttachedToWindow()&&getWindowVisibility()==VISIBLE&&getVisibility()==VISIBLE&&hasWindowFocus()&&StudioConfig.read(getContext()).optBoolean("idleScreen",true));}
+    @Override public void onWindowFocusChanged(boolean focus){super.onWindowFocusChanged(focus);updateIdle();}
+    @Override protected void onAttachedToWindow(){super.onAttachedToWindow();updateIdle();if(weather!=null)WeatherInfo.bind(weather);removeCallbacks(wallpaperTick);postDelayed(wallpaperTick,60000);}
+    @Override protected void onWindowVisibilityChanged(int visibility){super.onWindowVisibilityChanged(visibility);updateIdle();if(wallpaperTick!=null){removeCallbacks(wallpaperTick);if(surfaceActive&&visibility==VISIBLE&&isAttachedToWindow())post(wallpaperTick);}}
+    @Override protected void onDetachedFromWindow(){if(idle!=null)idle.stop();removeCallbacks(wallpaperTick);if(weather!=null)WeatherInfo.unbind(weather);super.onDetachedFromWindow();}
     public static void invalidateApps(){catalogRevision++;}
 }

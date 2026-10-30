@@ -15,8 +15,8 @@ android {
         applicationId 'com.gathin.tvhome'
         minSdk 26
         targetSdk 29
-        versionCode 14
-        versionName '4.5'
+        versionCode 15
+        versionName '4.6'
         testInstrumentationRunner 'com.gathin.tvhome.HomeVisualTest'
     }
 
