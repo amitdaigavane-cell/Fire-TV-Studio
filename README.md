@@ -53,7 +53,7 @@ That is an implementation change, **not a promise that Amazon Home can never app
 
 ## Get started
 
-1. Download **TV-Home-Studio-1.5.apk** for your Android phone, or **TV-Home-4.5.apk** for computer installation.
+1. **Most users:** [download the PHONE app](https://github.com/sreeego/tv-home-studio/releases/download/v1.5.0/PHONE-TV-Home-Studio-1.5.apk) and install it on your Android phone. It includes and installs the TV launcher; **you do not need both APKs**. The **TV-ONLY-Launcher-4.5.apk** is only for manual installation onto Fire TV from a computer.
 2. Follow [INSTALL.md](docs/INSTALL.md), then select **This home**.
 3. Choose your design, add your own wallpapers, and review cleanup separately.
 

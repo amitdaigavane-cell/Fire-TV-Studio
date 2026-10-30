@@ -1,5 +1,13 @@
 # TV Home Studio 1.5 + TV Home 4.5
 
+## Which APK should I download?
+
+**Most users: [Download the PHONE app](https://github.com/sreeego/tv-home-studio/releases/download/v1.5.0/PHONE-TV-Home-Studio-1.5.apk)** and install it on your **Android phone**. It already includes the TV launcher and installs it onto your Fire TV over Wi-Fi. **You only need this one download.**
+
+**Using a computer instead?** Download [TV-ONLY-Launcher-4.5.apk](https://github.com/sreeego/tv-home-studio/releases/download/v1.5.0/TV-ONLY-Launcher-4.5.apk) and follow the [computer installation guide](https://github.com/sreeego/tv-home-studio/blob/main/docs/INSTALL.md#with-a-computer). This APK goes on the **Fire TV**, not your phone. It is the launcher only, without the phone cleanup/control app.
+
+The different version numbers belong to the phone app and bundled TV launcher; they are not two editions to choose between. Download names were clarified; the APK binaries are unchanged.
+
 Home-return fixes for all three native designs, with the updated launcher bundled in the Android companion. **Completely vibe coded with Codex.**
 
 Credits: [Gathin23/cleanyourtv](https://github.com/Gathin23/cleanyourtv), [itsmeterrylin/fire-tv-cleanup](https://github.com/itsmeterrylin/fire-tv-cleanup), and [udhaykumarbala/cleanyourtv-app](https://github.com/udhaykumarbala/cleanyourtv-app). Original notices and AdbLib attribution are included.
@@ -17,8 +25,8 @@ Credits: [Gathin23/cleanyourtv](https://github.com/Gathin23/cleanyourtv), [itsme
 
 ## Downloads
 
-- **TV-Home-Studio-1.5.apk** → Android phone, Android 9+. Includes the launcher.
-- **TV-Home-4.5.apk** → Fire TV, Android 8+; install with ADB or use the phone app.
+- **PHONE-TV-Home-Studio-1.5.apk** → Android phone, Android 9+. Includes the launcher.
+- **TV-ONLY-Launcher-4.5.apk** → Fire TV only; optional download for manual installation from a computer.
 - **tv-home-studio-source-1.5.zip** → full source, docs, licenses and computer helper.
 - **SHA256SUMS.txt** → verify downloads.
 
