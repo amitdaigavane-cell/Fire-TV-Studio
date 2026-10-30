@@ -23,15 +23,16 @@ public final class HomeSurface extends FrameLayout {
     private final ArrayList<ArrayList<View>> nav=new ArrayList<>();
     private LinearLayout content;
     private ScrollView scroll;
-    private TextView hero, subtitle, weather;
+    private TextView hero, subtitle, weather, cinemaGreeting;
     private PopupWindow popup;
     private String selected="", page="home";
     private long builtRevision=-1;
     private boolean rebuilding;
+    private boolean surfaceActive=true;
     private String layout="classic", wallpaperKey="";
     private boolean animations;
     private final ArrayList<View> sideNav=new ArrayList<>();
-    private final Runnable wallpaperTick=new Runnable(){public void run(){if(!isAttachedToWindow()||getWindowVisibility()!=VISIBLE)return;String next=StudioConfig.wallpaper(getContext());if(!next.equals(wallpaperKey)){wallpaperKey=next;setBackground(HomeWallpaper.background(getContext()));}if(weather!=null)WeatherInfo.bind(weather);postDelayed(this,60000);}};
+    private final Runnable wallpaperTick=new Runnable(){public void run(){if(!surfaceActive||!isAttachedToWindow()||getWindowVisibility()!=VISIBLE)return;String next=StudioConfig.wallpaper(getContext());if(!next.equals(wallpaperKey)){wallpaperKey=next;setBackground(HomeWallpaper.background(getContext()));}if(weather!=null)WeatherInfo.bind(weather);postDelayed(this,60000);}};
     private static int catalogRevision=0;
     private static int cachedCatalogRevision=-1;
     private static ArrayList<App> cachedApps;
@@ -71,12 +72,12 @@ public final class HomeSurface extends FrameLayout {
         cachedApps=new ArrayList<>(apps);cachedCatalogRevision=catalogRevision;
     }
     private void copyCatalog(){for(App source:cachedApps){App a=new App();a.pkg=source.pkg;a.name=source.name;a.component=source.component;a.banner=source.banner;a.art=source.art.getConstantState()==null?source.art:source.art.getConstantState().newDrawable(getResources());apps.add(a);}}
-    public void refresh(){long revision=prefs.getLong("ui_revision",0)+catalogRevision;if(builtRevision==revision){if(isAttachedToWindow()&&weather!=null)WeatherInfo.bind(weather);return;}builtRevision=revision;loadApps();build();}
+    public void refresh(){long revision=prefs.getLong("ui_revision",0)+catalogRevision;if(builtRevision==revision){if(surfaceActive&&isAttachedToWindow()&&weather!=null)WeatherInfo.bind(weather);return;}builtRevision=revision;loadApps();build();}
     private void changed(){prefs.edit().putLong("ui_revision",System.currentTimeMillis()).apply();builtRevision=-1;refresh();}
     private void saveDock(){prefs.edit().putString("dock",String.join(",",pinned)).apply();changed();}
 
     private void build(){
-        rebuilding=true;if(weather!=null)WeatherInfo.unbind(weather);dismissMenu();removeAllViews();targets.clear();nav.clear();
+        cinemaGreeting=null;rebuilding=true;if(weather!=null)WeatherInfo.unbind(weather);dismissMenu();removeAllViews();targets.clear();nav.clear();
         layout=StudioConfig.layout(getContext());animations=StudioConfig.flag(getContext(),"animations");sideNav.clear();wallpaperKey=StudioConfig.wallpaper(getContext());setBackground(HomeWallpaper.background(getContext()));
         if(!layout.equals("classic")){buildAlternative();return;}
         scroll=new ScrollView(getContext());scroll.setFillViewport(true);scroll.setClipToPadding(false);scroll.setVerticalScrollBarEnabled(false);
@@ -107,7 +108,7 @@ public final class HomeSurface extends FrameLayout {
         if(rest.isEmpty()&&!cinema&&!compact)content.addView(text(page.equals("hidden")?"No hidden apps. Use an app’s Menu to hide it.":"Your apps are all in Favorites.",13,MUTED),lp(-1,44));
         LinearLayout footer=row();LinearLayout.LayoutParams fp=lp(-1,38);fp.topMargin=dp(4);content.addView(footer,fp);footer.addView(text(StudioConfig.flag(getContext(),"showStatus")?networkStatus()+"  ·  "+storageStatus():"",11,MUTED),new LinearLayout.LayoutParams(0,-2,1));
         ArrayList<View> powerNav=new ArrayList<>();nav.add(powerNav);if(TvInputs.visible(getContext()))footer.addView(button("Inputs","inputs",this::inputsMenu,powerNav),spaced(92,34,12));if(StudioConfig.flag(getContext(),"showPower"))footer.addView(button("Power","power",this::powerMenu,powerNav),spaced(92,34,20));
-        wireNavigation();rebuilding=false;if(isAttachedToWindow())WeatherInfo.bind(weather);post(()->restoreSelection(selected,0));
+        wireNavigation();rebuilding=false;if(surfaceActive&&isAttachedToWindow())WeatherInfo.bind(weather);post(()->restoreSelection(selected,0));
     }
     private TextView brand(int size){String name=StudioConfig.read(getContext()).optString("homeName","HOME");TextView label=text(name,name.length()>12?13:size,accent());label.setSingleLine();label.setEllipsize(android.text.TextUtils.TruncateAt.END);label.setContentDescription(name);return label;}
     private TextView utility(String label,String key,Runnable action,List<View> group){TextView b=button(label,key,action,group);StateListDrawable bg=new StateListDrawable();GradientDrawable focus=shape(0xff243a49,12);focus.setStroke(dp(1),accent());bg.addState(new int[]{android.R.attr.state_focused},focus);bg.addState(new int[]{},new ColorDrawable(Color.TRANSPARENT));b.setBackground(bg);b.setContentDescription(key.equals("customize")?"Customize":key.equals("settings")?"Settings":label);b.setSingleLine();b.setEllipsize(android.text.TextUtils.TruncateAt.END);b.setTextSize(label.length()==1?21:12);b.setOnFocusChangeListener((v,f)->{if(f){selected=key;heading(null);if(subtitle!=null&&label.length()==1){subtitle.setText(b.getContentDescription());subtitle.setVisibility(VISIBLE);}}});return b;}
@@ -131,7 +132,14 @@ public final class HomeSurface extends FrameLayout {
                 caption.setPadding(dp(22),0,dp(22),0);
             }
             stage.addView(caption,lp(page.equals("home")?dockWidth:-1,54));
-            caption.addView(hero,lp(-1,34));subtitle=text("Select to open",11,MUTED);subtitle.setGravity(page.equals("home")?Gravity.START|Gravity.CENTER_VERTICAL:Gravity.CENTER);subtitle.setVisibility(INVISIBLE);caption.addView(subtitle,lp(-1,20));
+            if(page.equals("home")){
+                int hour=Calendar.getInstance().get(Calendar.HOUR_OF_DAY);
+                cinemaGreeting=text(hour<12?"GOOD MORNING":hour<17?"GOOD AFTERNOON":"GOOD EVENING",10,accent());
+                cinemaGreeting.setLetterSpacing(.20f);cinemaGreeting.setGravity(Gravity.CENTER_VERTICAL);
+                cinemaGreeting.setVisibility(StudioConfig.flag(getContext(),"showGreeting")?VISIBLE:INVISIBLE);
+                caption.addView(cinemaGreeting,lp(-1,20));
+            }
+            caption.addView(hero,lp(-1,34));subtitle=text("Select to open",11,MUTED);subtitle.setGravity(page.equals("home")?Gravity.START|Gravity.CENTER_VERTICAL:Gravity.CENTER);subtitle.setVisibility(page.equals("home")?GONE:INVISIBLE);caption.addView(subtitle,lp(-1,20));
             if(page.equals("home")){LinearLayout dockHolder=row();dockHolder.setGravity(Gravity.CENTER);content.addView(dockHolder,lp(-1,136));HorizontalScrollView rail=new HorizontalScrollView(getContext());rail.setHorizontalScrollBarEnabled(false);rail.setClipToPadding(false);rail.setPadding(dp(16),dp(6),dp(16),dp(6));rail.setBackground(shape(0xd9161c2a,24));LinearLayout tiles=row();tiles.setGravity(Gravity.CENTER_VERTICAL);rail.addView(tiles);dockHolder.addView(rail,lp(dockWidth,128));ArrayList<View> railNav=new ArrayList<>();nav.add(railNav);for(int i=0;i<visible.size();i++)tiles.addView(cinemaTile(visible.get(i),railNav),spaced(112,112,i==0?0:8));}else{section("APP LIBRARY",visible.size()+" apps");appRows(visible,5,true);}
 
         }else{
@@ -139,7 +147,7 @@ public final class HomeSurface extends FrameLayout {
         }
         if(visible.isEmpty())content.addView(text("No apps here yet. Manage your apps in Studio.",14,MUTED),lp(-1,54));footer();wireNavigation();
         if(!sideNav.isEmpty()){for(int i=0;i<sideNav.size();i++){View v=sideNav.get(i);v.setNextFocusUpId(sideNav.get(Math.max(0,i-1)).getId());v.setNextFocusDownId(sideNav.get(Math.min(sideNav.size()-1,i+1)).getId());v.setNextFocusLeftId(v.getId());v.setNextFocusRightId(nav.isEmpty()?v.getId():nav.get(0).get(0).getId());}for(ArrayList<View> group:nav)group.get(0).setNextFocusLeftId(sideNav.get(0).getId());}
-        rebuilding=false;if(isAttachedToWindow())WeatherInfo.bind(weather);post(()->restoreSelection(selected,0));
+        rebuilding=false;if(surfaceActive&&isAttachedToWindow())WeatherInfo.bind(weather);post(()->restoreSelection(selected,0));
     }
     private LinearLayout cinemaTile(App a,List<View> group){LinearLayout wrap=vertical();wrap.setClipChildren(false);wrap.setClipToPadding(false);wrap.setPadding(dp(6),dp(8),dp(6),0);FrameLayout tile=new FrameLayout(getContext());StateListDrawable dockFocus=new StateListDrawable();GradientDrawable ring=shape(0xff393247,16);ring.setStroke(dp(2),accent());dockFocus.addState(new int[]{android.R.attr.state_focused},ring);dockFocus.addState(new int[]{},shape(0x40374458,16));tile.setBackground(dockFocus);tile.setFocusable(true);tile.setClickable(true);tile.setId(View.generateViewId());tile.setContentDescription(a.name);wrap.addView(tile,lp(-1,72));ImageView image=new ImageView(getContext());image.setImageDrawable(a.art);image.setScaleType(ImageView.ScaleType.FIT_CENTER);image.setPadding(dp(10),dp(10),dp(10),dp(10));tile.addView(image,new LayoutParams(-1,-1));TextView label=text(a.name,12,WHITE);label.setGravity(Gravity.CENTER);label.setSingleLine();label.setEllipsize(android.text.TextUtils.TruncateAt.END);LinearLayout.LayoutParams title=lp(-1,22);title.topMargin=dp(6);wrap.addView(label,title);targets.put(a.pkg,tile);group.add(tile);tile.setOnFocusChangeListener((v,f)->{motion(v,f);if(f&&!rebuilding){selected=a.pkg;heading(a.name);}});tile.setOnClickListener(v->launch(new Intent(Intent.ACTION_MAIN).setComponent(a.component).addFlags(Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED)));tile.setOnLongClickListener(v->{appMenu(a);return true;});tile.setOnKeyListener((v,k,e)->{if(k==KeyEvent.KEYCODE_MENU&&e.getAction()==KeyEvent.ACTION_DOWN){appMenu(a);return true;}return false;});return wrap;}
     private void section(String title,String detail){LinearLayout r=row();LinearLayout.LayoutParams p=lp(-1,22);p.topMargin=dp(4);content.addView(r,p);TextView n=text(title,10,MUTED);n.setLetterSpacing(.16f);r.addView(n,new LinearLayout.LayoutParams(0,-2,1));r.addView(text(detail,10,MUTED));}
@@ -159,8 +167,13 @@ public final class HomeSurface extends FrameLayout {
         }
     }
     private void heading(String name){
+        if(cinemaGreeting!=null){
+            int hour=Calendar.getInstance().get(Calendar.HOUR_OF_DAY);
+            cinemaGreeting.setText(hour<12?"GOOD MORNING":hour<17?"GOOD AFTERNOON":"GOOD EVENING");
+            cinemaGreeting.setVisibility(name!=null?GONE:StudioConfig.flag(getContext(),"showGreeting")?VISIBLE:INVISIBLE);
+        }
         if(hero!=null&&page.equals("home")){String title=name==null?"What would you like to watch?":name;if(!android.text.TextUtils.equals(hero.getText(),title)){hero.setText(title);hero.animate().cancel();hero.setAlpha(1);}}
-        if(subtitle!=null){String hint=page.equals("hidden")?"App options":"Select to open";if(!android.text.TextUtils.equals(subtitle.getText(),hint))subtitle.setText(hint);subtitle.setVisibility(name==null?INVISIBLE:VISIBLE);}
+        if(subtitle!=null){String hint=page.equals("hidden")?"App options":"Select to open";if(!android.text.TextUtils.equals(subtitle.getText(),hint))subtitle.setText(hint);subtitle.setVisibility(name==null?(cinemaGreeting!=null?GONE:INVISIBLE):VISIBLE);}
     }
     private TextView button(String title,String key,Runnable action,List<View> group){TextView b=text(title,12,WHITE);b.setGravity(Gravity.CENTER);b.setBackground(tileBackground());b.setFocusable(true);b.setClickable(true);b.setId(View.generateViewId());b.setOnClickListener(v->action.run());b.setOnFocusChangeListener((v,f)->{if(f){selected=key;heading(null);}});group.add(b);targets.put(key,b);if(key.equals("settings")){b.setOnLongClickListener(v->{customize();return true;});b.setOnKeyListener((v,k,e)->{if(k==KeyEvent.KEYCODE_MENU&&e.getAction()==KeyEvent.ACTION_DOWN){customize();return true;}return false;});}return b;}
     private void wireNavigation(){nav.removeIf(List::isEmpty);for(int r=0;r<nav.size();r++)for(int c=0;c<nav.get(r).size();c++){View v=nav.get(r).get(c);ArrayList<View> row=nav.get(r);v.setNextFocusLeftId(row.get(Math.max(0,c-1)).getId());v.setNextFocusRightId(row.get(Math.min(row.size()-1,c+1)).getId());v.setNextFocusUpId(r>0?nav.get(r-1).get(Math.min(c,nav.get(r-1).size()-1)).getId():v.getId());v.setNextFocusDownId(r+1<nav.size()?nav.get(r+1).get(Math.min(c,nav.get(r+1).size()-1)).getId():v.getId());}}
@@ -234,8 +247,13 @@ public final class HomeSurface extends FrameLayout {
     private void launch(Intent intent){HomeRedirectService.launchFromSurface(this,intent);}
     private String networkStatus(){ConnectivityManager cm=(ConnectivityManager)getContext().getSystemService(Context.CONNECTIVITY_SERVICE);NetworkCapabilities cap=cm.getNetworkCapabilities(cm.getActiveNetwork());return cap==null?"Offline":cap.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)?"Connected":"No internet";}
     private String storageStatus(){StatFs fs=new StatFs(getContext().getFilesDir().getPath());return String.format(Locale.getDefault(),"%.1f GB free",fs.getAvailableBytes()/1073741824.0);}
+    void setSurfaceActive(boolean active){
+        surfaceActive=active;removeCallbacks(wallpaperTick);
+        if(!active){if(weather!=null)WeatherInfo.unbind(weather);}
+        else if(isAttachedToWindow())post(wallpaperTick);
+    }
     @Override protected void onAttachedToWindow(){super.onAttachedToWindow();if(weather!=null)WeatherInfo.bind(weather);removeCallbacks(wallpaperTick);postDelayed(wallpaperTick,60000);}
-    @Override protected void onWindowVisibilityChanged(int visibility){super.onWindowVisibilityChanged(visibility);if(wallpaperTick!=null){removeCallbacks(wallpaperTick);if(visibility==VISIBLE&&isAttachedToWindow())post(wallpaperTick);}}
+    @Override protected void onWindowVisibilityChanged(int visibility){super.onWindowVisibilityChanged(visibility);if(wallpaperTick!=null){removeCallbacks(wallpaperTick);if(surfaceActive&&visibility==VISIBLE&&isAttachedToWindow())post(wallpaperTick);}}
     @Override protected void onDetachedFromWindow(){removeCallbacks(wallpaperTick);if(weather!=null)WeatherInfo.unbind(weather);super.onDetachedFromWindow();}
     public static void invalidateApps(){catalogRevision++;}
 }

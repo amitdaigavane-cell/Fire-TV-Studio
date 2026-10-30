@@ -49,9 +49,18 @@ public class HomeRedirectService extends AccessibilityService {
     private boolean recoverUnknownHome;
     private HomeSurface overlay;
     private volatile boolean attached;
+    private boolean windowAdded;
+    private final Runnable refreshVisibleHome=()->{if(attached&&overlay!=null)overlay.refresh();};
     private long bypassUntil;
+    private long returnStartedAt;
     private long externalLaunchUntil;
     private boolean launcherRequested;
+    private long anchorDeadline;
+    private final Runnable anchorRetry=new Runnable(){public void run(){
+        if(!launcherRequested||!attached||screenOff||yieldToOtherScreen)return;
+        if(SystemClock.uptimeMillis()>=anchorDeadline){launcherRequested=false;return;}
+        requestHomeActivity();
+    }};
     private boolean yieldToOtherScreen;
     private int redirectGeneration;
     private boolean receiversRegistered;
@@ -88,7 +97,9 @@ public class HomeRedirectService extends AccessibilityService {
                 screenOff = true;
                 getSharedPreferences("tvhome", MODE_PRIVATE).edit().putBoolean("resume_home", true).apply();
                 stopRecovery();handler.removeCallbacks(wakeRedirect);
-                cancelRedirect();clearExternalLaunch();hideOverlay();
+                cancelRedirect();clearExternalLaunch();
+                // Prepare Home while the display is off, before Fire OS paints its wake screen.
+                showOverlay();overlayPassThrough(true);if(overlay!=null)overlay.setSurfaceActive(false);
             } else if (Intent.ACTION_DREAMING_STARTED.equals(i.getAction())) {
                 dreaming = true;
                 stopRecovery();cancelRedirect();clearExternalLaunch();hideOverlay();
@@ -129,7 +140,7 @@ public class HomeRedirectService extends AccessibilityService {
         }
         Log.i(TAG, "interactive Home overlay ready");
         if (homeWatcher != null) homeWatcher.close();
-        homeWatcher = new HomePressWatcher(this, handler, this::earlyHomePressed);
+        homeWatcher = new HomePressWatcher(this, handler, this::earlyHomeSignal);
         MainActivity currentHome=MainActivity.currentHome();
         if(currentHome!=null&&currentHome.isHomeResumed()&&!screenOff)
             activityReady(currentHome,currentHome.surface());
@@ -150,7 +161,8 @@ public class HomeRedirectService extends AccessibilityService {
         // suppress the only wake request or replay an old queued app after wake.
         cancelRedirect();clearExternalLaunch();bypassUntil=0;settingsSeenAt=-SETTINGS_GRACE_MS;yieldToOtherScreen=false;
         getSharedPreferences("tvhome",MODE_PRIVATE).edit().putBoolean("resume_home",true).apply();
-        handler.removeCallbacks(wakeRedirect);handler.postDelayed(wakeRedirect,100);
+        showOverlay();
+        handler.removeCallbacks(wakeRedirect);handler.post(wakeRedirect);
         handler.removeCallbacks(recoveryCheck);handler.postDelayed(recoveryCheck,350);
     }
     private void checkWakeRecovery(){
@@ -167,6 +179,15 @@ public class HomeRedirectService extends AccessibilityService {
         else if(action==WakeRecovery.STOP){stopRecovery();return;}
         handler.postDelayed(recoveryCheck,650);
     }
+    private void earlyHomeSignal(int kind) {
+        long now=SystemClock.uptimeMillis();
+        // App exits and task resumes are Home returns, not physical Home key presses.
+        // Preserve explicit Settings and launch bypasses for those indirect requests.
+        if(!HomeSignal.shouldRedirect(kind,now<externalLaunchUntil,
+                now-settingsSeenAt<SETTINGS_GRACE_MS,now<bypassUntil))return;
+        Log.i(TAG,"early Home return kind="+kind);
+        earlyHomePressed();
+    }
     private void earlyHomePressed() {
         if(!isEnabled(this))return;
         if (!interactive()) {screenOff=true;return;}
@@ -182,6 +203,7 @@ public class HomeRedirectService extends AccessibilityService {
         settingsSeenAt = -SETTINGS_GRACE_MS;
         clearExternalLaunch();
         cancelRedirect();
+        returnStartedAt=SystemClock.uptimeMillis();
         Log.i(TAG, "early Home signal");
         showOverlay();
         handler.post(redirect);
@@ -201,6 +223,9 @@ public class HomeRedirectService extends AccessibilityService {
         }
         long now = SystemClock.uptimeMillis();
         if (screenOff) return;
+        // An old app-window event may have been queued before the early Home request.
+        // It must not remove the cover or cancel a newer navigation decision.
+        if(attached && now>=externalLaunchUntil && event.getEventTime()<returnStartedAt)return;
         // Our overlay and its popup also emit window events. They must not cancel their own redirect.
         if (getPackageName().contentEquals(pkg)) return;
         // Accessibility also reports background windows. With an opaque Home surface in front,
@@ -256,11 +281,16 @@ public class HomeRedirectService extends AccessibilityService {
 
     private void openLauncher() {
         if (launcherRequested || SystemClock.uptimeMillis() < externalLaunchUntil) return;
+        anchorDeadline=SystemClock.uptimeMillis()+6000;
+        requestHomeActivity();
+    }
+    private void requestHomeActivity(){
         try {
             launcherRequested = true;
             startActivity(new Intent(this, MainActivity.class)
                     .putExtra(EXTRA_REDIRECT, ++redirectGeneration)
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_NO_ANIMATION));
+            handler.removeCallbacks(anchorRetry);handler.postDelayed(anchorRetry,1000);
         } catch (RuntimeException e) {
             launcherRequested = false;
             Log.w(TAG, "Could not request home activity", e);
@@ -269,25 +299,38 @@ public class HomeRedirectService extends AccessibilityService {
 
     private void cancelRedirect() {
         handler.removeCallbacks(redirect);
+        handler.removeCallbacks(anchorRetry);
         launcherRequested = false;
         redirectGeneration++;
     }
 
     private void showOverlay() {
         cancelTransitionRelease();
-        if (attached) { overlayPassThrough(false); return; }
+        if (attached) { overlay.setSurfaceActive(true);overlayPassThrough(false); return; }
         long start = SystemClock.uptimeMillis();
         try {
             if (overlay == null) overlay = new HomeSurface(new ContextThemeWrapper(this, R.style.Theme_TvHome));
-            overlay.refresh();
-            WindowManager.LayoutParams params = new WindowManager.LayoutParams(-1, -1,
-                    WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
-                    WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN | WindowManager.LayoutParams.FLAG_FULLSCREEN
-                            | WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED,
-                    PixelFormat.OPAQUE);
-            params.setTitle("TV Home instant surface");
-            ((WindowManager)getSystemService(WINDOW_SERVICE)).addView(overlay, params);
+            boolean retained=windowAdded;
+            if (!windowAdded) {
+                overlay.refresh();
+                WindowManager.LayoutParams params = new WindowManager.LayoutParams(-1, -1,
+                        WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
+                        WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN | WindowManager.LayoutParams.FLAG_FULLSCREEN
+                                | WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED,
+                        // Alpha-zero OPAQUE windows still obscure lower windows in Android 9
+                        // power policy, suppressing the player's KEEP_SCREEN_ON request.
+                        PixelFormat.TRANSLUCENT);
+                params.setTitle("TV Home instant surface");
+                ((WindowManager)getSystemService(WINDOW_SERVICE)).addView(overlay, params);
+                windowAdded = true;
+            }
             attached = true;
+            overlay.setSurfaceActive(true);
+            overlay.setImportantForAccessibility(android.view.View.IMPORTANT_FOR_ACCESSIBILITY_AUTO);
+            overlayPassThrough(false);
+            // Package broadcasts can invalidate the app catalog while an app runs.
+            // Reveal the existing buffer before any package-manager queries / artwork work.
+            if(retained){handler.removeCallbacks(refreshVisibleHome);handler.postDelayed(refreshVisibleHome,150);}
             overlay.post(() -> Log.i(TAG, "overlay first layout after " + (SystemClock.uptimeMillis()-start) + "ms"));
         } catch (RuntimeException e) {
             Log.w(TAG, "overlay unavailable; falling back to activity", e);
@@ -295,14 +338,23 @@ public class HomeRedirectService extends AccessibilityService {
     }
     private void hideOverlay() {
         cancelTransitionRelease();
+        handler.removeCallbacks(refreshVisibleHome);
         if (!attached || overlay == null) return;
         overlay.dismissMenu();
+        // Retain the rendered buffer for the next Home return. Removing and re-adding
+        // this window cost almost a second on the 1 GB stick. A transparent window must
+        // never own remote input or expose invisible accessibility controls.
+        overlay.setSurfaceActive(false);
+        overlay.setImportantForAccessibility(android.view.View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);
         attached = false;
-        try {
-            ((WindowManager)getSystemService(WINDOW_SERVICE)).removeViewImmediate(overlay);
-        } catch (IllegalArgumentException e) {
-            Log.d(TAG, "Overlay was already removed", e);
-        }
+        overlayPassThrough(true);
+    }
+    private void destroyOverlay() {
+        hideOverlay();
+        if (!windowAdded || overlay == null) return;
+        try { ((WindowManager)getSystemService(WINDOW_SERVICE)).removeViewImmediate(overlay); }
+        catch (IllegalArgumentException e) { Log.d(TAG, "Overlay was already removed", e); }
+        windowAdded = false;
     }
     private void cancelTransitionRelease() {
         if (transitionRelease != null) handler.removeCallbacks(transitionRelease);
@@ -317,12 +369,13 @@ public class HomeRedirectService extends AccessibilityService {
         handler.postDelayed(transitionRelease, 250);
     }
     private void overlayPassThrough(boolean value) {
-        if (!attached || overlay == null) return;
+        if (!windowAdded || overlay == null) return;
         WindowManager.LayoutParams params = (WindowManager.LayoutParams)overlay.getLayoutParams();
         int flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE;
         int updated=value ? params.flags | flags : params.flags & ~flags;
-        if(params.flags==updated)return;
-        params.flags=updated;
+        float alpha=attached ? 1f : 0f;
+        if(params.flags==updated && params.alpha==alpha)return;
+        params.flags=updated;params.alpha=alpha;
         ((WindowManager)getSystemService(WINDOW_SERVICE)).updateViewLayout(overlay, params);
     }
     public static void activityReady(MainActivity activity, HomeSurface surface) {
@@ -343,6 +396,7 @@ public class HomeRedirectService extends AccessibilityService {
             // A duplicate window event is not a reason to expose the task underneath Home.
         }
         s.getSharedPreferences("tvhome",MODE_PRIVATE).edit().putBoolean("resume_home",false).apply();
+        s.handler.removeCallbacks(s.anchorRetry);
         s.resumedActivity = activity;
         s.yieldToOtherScreen = false;
         s.launcherRequested = false;
@@ -459,7 +513,7 @@ public class HomeRedirectService extends AccessibilityService {
     @Override public void onDestroy() {
         if (powerActions != null) powerActions.close();
         if (homeWatcher != null) homeWatcher.close();
-        hideOverlay();handler.removeCallbacksAndMessages(null);
+        destroyOverlay();handler.removeCallbacksAndMessages(null);
         if (receiversRegistered) {
             unregisterReceiver(screenReceiver);
             unregisterReceiver(packageReceiver);
@@ -506,12 +560,23 @@ public class HomeRedirectService extends AccessibilityService {
     });}
 
     static org.json.JSONObject health(Context context)throws org.json.JSONException{return new org.json.JSONObject().put("configured",isEnabled(context)).put("connected",instance!=null&&isEnabled(context)).put("connectionEpoch",connectionEpoch).put("interactive",((android.os.PowerManager)context.getSystemService(POWER_SERVICE)).isInteractive()).put("overlay",instance!=null&&instance.attached).put("readLogs",context.checkSelfPermission(android.Manifest.permission.READ_LOGS)==android.content.pm.PackageManager.PERMISSION_GRANTED);}
-    static boolean repairHome(Context context){if(!isEnabled(context))return false;if(!setEnabled(context,false))return false;new Handler(Looper.getMainLooper()).postDelayed(()->chooseHome(context,true),350);return true;}
+    static boolean repairHome(Context context){
+        if(!isEnabled(context))return false;
+        // Disabling the service can make a provider-only process immediately killable.
+        // Move the repair into a resumed activity before disconnecting the service.
+        try{context.startActivity(new Intent(context,MainActivity.class).putExtra("repair_home",true)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_NO_ANIMATION));return true;}
+        catch(RuntimeException e){Log.w(TAG,"Cannot open Home for repair",e);return false;}
+    }
+    static void repairFromActivity(MainActivity activity){
+        if(!setEnabled(activity,false))return;
+        new Handler(Looper.getMainLooper()).postDelayed(()->setEnabled(activity,true),350);
+    }
     static boolean chooseHome(Context context,boolean custom){
         if(!setEnabled(context,custom))return false;
         Context app=context.getApplicationContext();
         new Handler(Looper.getMainLooper()).post(()->{
-            if(!custom&&instance!=null){instance.handler.removeCallbacksAndMessages(null);instance.cancelRedirect();instance.clearExternalLaunch();instance.hideOverlay();if(instance.homeWatcher!=null){instance.homeWatcher.close();instance.homeWatcher=null;}}
+            if(!custom&&instance!=null){instance.handler.removeCallbacksAndMessages(null);instance.cancelRedirect();instance.clearExternalLaunch();instance.destroyOverlay();if(instance.homeWatcher!=null){instance.homeWatcher.close();instance.homeWatcher=null;}}
             Intent intent=custom?new Intent(app,MainActivity.class):new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME).setPackage(AMAZON_LAUNCHER);
             try{app.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_NO_ANIMATION));}
             catch(RuntimeException e){Toast.makeText(app,"Open your Home screen from the remote",Toast.LENGTH_LONG).show();}

@@ -10,4 +10,4 @@ No project accounts, ads, analytics or telemetry uploads are implemented.
 - READ_LOGS is granted through ADB so a local filtered watcher can recognize Home transitions earlier. The launcher does not store or upload log streams.
 - Amazon's own apps and your installed streaming apps have their own privacy practices; hiding an icon does not disable that app.
 
-This first public release is a sideloaded development build, with source and checksums supplied. Its APKs are signed with the maintainer's existing development certificate to preserve updates for earlier builds. The private key is not in the repository. Independent builds use the builder's own debug key unless they configure release signing.
+These releases are sideloaded development builds, with source and checksums supplied. Their APKs are signed with the maintainer's existing development certificate to preserve updates for earlier builds. The private key is not in the repository. Independent builds use the builder's own debug key unless they configure release signing.

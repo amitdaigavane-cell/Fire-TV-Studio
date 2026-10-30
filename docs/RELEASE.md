@@ -1,22 +1,27 @@
-# TV Home Studio 1.4 + TV Home 4.4
+# TV Home Studio 1.5 + TV Home 4.5
 
-First public preview: three native launcher designs, Android companion, and a computer installation/cleanup helper. **Completely vibe coded with Codex.**
+Home-return fixes for all three native designs, with the updated launcher bundled in the Android companion. **Completely vibe coded with Codex.**
 
 Credits: [Gathin23/cleanyourtv](https://github.com/Gathin23/cleanyourtv), [itsmeterrylin/fire-tv-cleanup](https://github.com/itsmeterrylin/fire-tv-cleanup), and [udhaykumarbala/cleanyourtv-app](https://github.com/udhaykumarbala/cleanyourtv-app). Original notices and AdbLib attribution are included.
 
 - Restore **Customize → Themes** on the TV: Classic, Cinema and Panel, preserving each profile's wallpaper/options.
 - Cinema retains its centered bold clock and left-aligned app name/hint above the dock.
-- Persistent native Home window replaces our old timed handoff; wake recovery and repair remain. This does not guarantee Amazon Home can never appear.
+- Catch Home requests from ordinary apps, including YouTube Back, and existing Home-task resumes. No per-app allowlist or Back-button remapping.
+- Keep the rendered Home window ready while apps are open, transparent and unable to receive input, instead of rebuilding it on every return. Prepare Home during screen-off and remove the deliberate wake delay.
+- Fix service repair losing its re-enable callback when Fire OS kills the background process. Repair now runs from the foreground Home activity. Ignore stale window events and retry a deferred Home activity request for a bounded interval.
+- Correct the transparent overlay's window format so it no longer obscures a video player's keep-awake request in Android window policy. Keep existing system sleep settings.
+- Add the time-of-day greeting above Cinema's idle heading and lower that heading slightly toward the dock. Custom screensaver work is deferred.
+- ARMv7 is confirmed on the tested AFTSS. Both APKs have no bundled native libraries. Added a compatibility matrix comparing this fork with the three references; added the minimum-OS check to the computer helper.
 - Phone setup, explicit cleanup, reversible changes, per-theme wallpapers/options, city weather or Off, best-effort OTA restriction/resume.
 - Real Fire TV Stick HD screenshots and computer installation instructions included.
 
 ## Downloads
 
-- **TV-Home-Studio-1.4.apk** → Android phone, Android 9+. Includes the launcher.
-- **TV-Home-4.4.apk** → Fire TV, Android 8+; install with ADB or use the phone app.
-- **tv-home-studio-source-1.4.zip** → full source, docs, licenses and computer helper.
+- **TV-Home-Studio-1.5.apk** → Android phone, Android 9+. Includes the launcher.
+- **TV-Home-4.5.apk** → Fire TV, Android 8+; install with ADB or use the phone app.
+- **tv-home-studio-source-1.5.zip** → full source, docs, licenses and computer helper.
 - **SHA256SUMS.txt** → verify downloads.
 
 [Installation and recovery](https://github.com/sreeego/tv-home-studio/blob/main/docs/INSTALL.md) · [Validation](https://github.com/sreeego/tv-home-studio/blob/main/docs/VALIDATION.md) · [Credits](https://github.com/sreeego/tv-home-studio/blob/main/docs/CREDITS.md)
 
-This is an experimental sideloaded development build, signed consistently with prior personal builds. No wallpaper, signing key or personal TV backup is included. Tested on AFTSS / Fire OS 7.7.1.7; other firmware and Vega OS are not claimed supported. Stock Home stays installed for Settings. Updates may remain possible when Fire OS protects an updater.
+This is a sideloaded community development build, signed consistently with prior releases. No wallpaper, signing key or personal TV backup is included. Tested on AFTSS / Fire OS 7.7.1.7 / ARMv7. Other firmware is unverified; Fire OS 5/6 and Vega OS are unsupported. Stock Home stays installed for Settings. No guarantee of zero stock-Home frames, particularly before our service starts at cold boot. Updates may remain possible when Fire OS protects an updater. See the [compatibility details](https://github.com/sreeego/tv-home-studio/blob/main/docs/COMPATIBILITY.md).

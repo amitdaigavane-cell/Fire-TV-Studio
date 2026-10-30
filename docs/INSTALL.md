@@ -2,15 +2,17 @@
 
 ## Before either method
 
+See the [compatibility matrix](COMPATIBILITY.md). ARMv7 works on the tested AFTSS; Fire OS 5/6 and Vega OS are unsupported by these builds.
+
 Use an **Android-based Fire TV**, not Vega OS. Put your phone/computer and TV on the same trusted network. Enable **Settings → My Fire TV → Developer options → ADB debugging**. If Developer options is hidden, open About and select the device name seven times. Find the TV's IP under About → Network. Accept only the authorization prompt from your own phone/computer.
 
-Downloads: [v1.4.0 release](https://github.com/sreeego/tv-home-studio/releases/tag/v1.4.0). The release includes SHA256SUMS.txt. The phone APK and TV APK are different applications.
+Downloads: [v1.5.0 release](https://github.com/sreeego/tv-home-studio/releases/tag/v1.5.0). The release includes SHA256SUMS.txt. The phone APK and TV APK are different applications.
 
 ## With an Android phone
 
-1. Install **TV-Home-Studio-1.4.apk** on an Android 9+ phone. Allow installation from the browser/file manager when Android requests it.
+1. Install **TV-Home-Studio-1.5.apk** on an Android 9+ phone. Allow installation from the browser/file manager when Android requests it.
 2. Open Studio, enter the TV's IP and port (normally 5555), connect, and accept the TV authorization prompt.
-3. Select **Install TV Home**. Studio installs its bundled TV Home 4.4 and grants the Home-switching permissions over ADB.
+3. Select **Install TV Home**. Studio installs its bundled TV Home 4.5 and grants the Home-switching permissions over ADB.
 4. Choose **This home**. **Default home** returns to Amazon Home.
 5. In Themes, apply Classic, Cinema or Panel. Customize uploads wallpapers and changes options; editing an inactive theme does not switch the TV until you choose Apply.
 6. On the TV itself, open **Customize → Themes** to switch with the remote. Saved wallpapers and options follow the theme.
@@ -20,14 +22,14 @@ Update both by installing the new phone APK over the old phone app, then using U
 
 ## With a computer
 
-Install [Android SDK Platform Tools](https://developer.android.com/tools/releases/platform-tools) and Python 3.9+ (or use the direct commands below). Download **TV-Home-4.4.apk**, then clone or download this repository. Commands assume `adb` is on PATH. On Windows you can use `py` in place of `python`.
+Install [Android SDK Platform Tools](https://developer.android.com/tools/releases/platform-tools) and Python 3.9+ (or use the direct commands below). Download **TV-Home-4.5.apk**, then clone or download this repository. Commands assume `adb` is on PATH. On Windows you can use `py` in place of `python`.
 
 Replace `192.168.1.50` with your TV's IP. The examples use a placeholder, not an automatically discovered address.
 
 ```text
 adb connect 192.168.1.50:5555
 adb -s 192.168.1.50:5555 get-state
-python tools/tvhome.py --serial 192.168.1.50:5555 install --apk TV-Home-4.4.apk --home this
+python tools/tvhome.py --serial 192.168.1.50:5555 install --apk TV-Home-4.5.apk --home this
 python tools/tvhome.py --serial 192.168.1.50:5555 status
 ```
 
@@ -37,7 +39,7 @@ If adb is not on PATH, pass `--adb` with its full path before the subcommand. Th
 
 ```text
 adb connect 192.168.1.50:5555
-adb -s 192.168.1.50:5555 install -r TV-Home-4.4.apk
+adb -s 192.168.1.50:5555 install -r TV-Home-4.5.apk
 adb -s 192.168.1.50:5555 shell pm grant com.gathin.tvhome android.permission.WRITE_SECURE_SETTINGS
 adb -s 192.168.1.50:5555 shell pm grant com.gathin.tvhome android.permission.READ_LOGS
 adb -s 192.168.1.50:5555 shell content call --uri content://com.gathin.tvhome.studio --method home --arg this

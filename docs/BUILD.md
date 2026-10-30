@@ -39,3 +39,14 @@ adb -s emulator-5580 shell wm density 320
 Build `:app:assembleDebugAndroidTest`, install app-debug.apk and app-debug-androidTest.apk on that emulator, then run `adb -s emulator-5580 shell am instrument -w com.gathin.tvhome.test/com.gathin.tvhome.HomeVisualTest`.
 
 The standalone Java test sources in tests/ document additional protocol/config/weather/wake-policy cases from development. They require Android's org.json implementation or the Android test environment; they are not part of the Python suite. Current public release checks are listed in [VALIDATION.md](VALIDATION.md).
+
+### Home-return regression checks
+
+These checks use the real HomeSignal parser/policy and need only a JDK; no TV or Android SDK runtime is contacted. From the repository root:
+
+```text
+javac -d build/home-signal launcher/app/src/main/java/com/gathin/tvhome/HomeSignal.java tests/HomeSignalTest.java
+java -cp build/home-signal com.gathin.tvhome.HomeSignalTest
+```
+
+They cover the observed YouTube app-UID Home intent, other app UIDs, exact Home components/categories, existing-task resume events, and Settings/external-launch bypass guards.

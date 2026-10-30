@@ -1,10 +1,10 @@
 # TV Home Studio
 
-TV Home Studio 1.4 is an Android phone companion for the included TV Home 4.4 launcher. This is a personal sideloaded build, inspired by the reversible workflow in https://github.com/udhaykumarbala/cleanyourtv-app. It does not use that project's app code or claim its device coverage.
+TV Home Studio 1.5 is an Android phone companion for the included TV Home 4.5 launcher. This is a personal sideloaded build, inspired by the reversible workflow in https://github.com/udhaykumarbala/cleanyourtv-app. It does not use that project's app code or claim its device coverage.
 
 ## Install and connect
 
-1. Install **TV-Home-Studio.apk on the Android phone** (Android 9 or newer). The separate TV-Home-4.4.apk is for manual TV installation; the companion already includes it.
+1. Install **TV-Home-Studio.apk on the Android phone** (Android 9 or newer). The separate TV-Home-4.5.apk is for manual TV installation; the companion already includes it.
 2. Put the phone and Fire TV on the same trusted network. On Fire TV, enable Settings → My Fire TV → Developer options → ADB debugging. If Developer options is hidden, select the device name in About seven times.
 3. Enter the TV IP from About → Network, normally port 5555. Accept the phone's authorization prompt on the TV.
 4. Tap Install TV Home. Then choose **This home**. **Default home** switches back to Amazon Home without uninstalling either launcher.

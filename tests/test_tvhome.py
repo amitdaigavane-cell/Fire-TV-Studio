@@ -11,6 +11,17 @@ spec.loader.exec_module(tvhome)
 
 
 class RecoveryTests(unittest.TestCase):
+    def test_preflight_rejects_old_os_but_accepts_armv7_fire_tv(self):
+        for sdk, supported in [('22', False), ('25', False), ('28', True)]:
+            tv = tvhome.TV('adb', 'fixture')
+            responses = ['package:com.amazon.tv.launcher', 'AFTSS', sdk]
+            with patch.object(tv, 'run', return_value='device'), patch.object(tv, 'shell', side_effect=responses):
+                if supported:
+                    tv.preflight()
+                else:
+                    with self.assertRaisesRegex(RuntimeError, 'API 26'):
+                        tv.preflight()
+
     def test_rejects_different_device_and_core_packages(self):
         with tempfile.TemporaryDirectory() as directory:
             p = Path(directory) / 'backup.json'

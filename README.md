@@ -6,7 +6,7 @@
 >
 > **Completely vibe coded with Codex**, iterated by testing on a real Fire TV Stick HD. Experimental community software; not an independently audited product.
 
-[Download APKs](https://github.com/sreeego/tv-home-studio/releases/tag/v1.4.0) · [Install from your phone](docs/INSTALL.md#with-an-android-phone) · [Install from a computer](docs/INSTALL.md#with-a-computer) · [Build it yourself](docs/BUILD.md)
+[Download APKs](https://github.com/sreeego/tv-home-studio/releases/tag/v1.5.0) · [Install from your phone](docs/INSTALL.md#with-an-android-phone) · [Install from a computer](docs/INSTALL.md#with-a-computer) · [Build it yourself](docs/BUILD.md)
 
 ![Classic, Cinema and Panel on a real Fire TV Stick HD](docs/images/comparison.png)
 
@@ -38,21 +38,22 @@ This is the feature set of this adaptation, not a claim that upstream projects l
 
 ## About the Amazon Home flash
 
-The problem that motivated this work was briefly seeing Amazon Home during launcher transitions. This version removes the **timed overlay-to-activity handoff** from our Home path: the accessibility service keeps the native Home surface in its own interactive window. It also has bounded wake recovery and service repair after an update.
+The problem that motivated this work was briefly seeing Amazon Home during launcher transitions. This version removes the **timed overlay-to-activity handoff** from our Home path. Version 4.5 also catches app-initiated Home requests (including Back from YouTube) and existing Home-task resumes. It keeps the rendered Home buffer ready while another app is open, transparent and unable to take input, instead of removing and rebuilding the window. Wake preparation and service repair are shared by all three themes.
 
 That is an implementation change, **not a promise that Amazon Home can never appear**. Fire OS controls the system Home activity; startup, service termination, permission changes, Settings transitions and different firmware can still expose it. Amazon Home remains installed and enabled so Settings and recovery remain available. There is no root or firmware patch.
 
 ## Compatibility and current status
 
-- Physically tested: **Fire TV Stick HD, AFTSS, Fire OS 7.7.1.7 / Android 9**.
+- Physically tested: **Fire TV Stick HD, AFTSS, Fire OS 7.7.1.7 / Android 9, `armeabi-v7a` (32-bit ARM)**. ARMv7 works on this device; both APKs contain no bundled native libraries and need no architecture-specific download.
 - Launcher minimum: Android 8 / API 26 on Android-based Fire TV. Phone minimum: Android 9.
 - Uses classic authorized ADB over TCP, usually port 5555. Newer firmware may restrict it. Vega OS and Android wireless-debugging TLS pairing are not supported.
 - Other Android-based Fire TV models are unverified; integrated-TV Inputs, IR/power behavior and OEM restrictions vary.
-- Initial public release: **Studio 1.4 + TV Home 4.4**. See [validation and limits](docs/VALIDATION.md).
+- Fire OS 5/6 are below the minimum API level. Non-Fire Android TV / Google TV are outside this fork's installer support, even where upstream supports them.
+- Current release: **Studio 1.5 + TV Home 4.5**. See the [compatibility matrix and limitations](docs/COMPATIBILITY.md) and [validation](docs/VALIDATION.md).
 
 ## Get started
 
-1. Download **TV-Home-Studio-1.4.apk** for your Android phone, or **TV-Home-4.4.apk** for computer installation.
+1. Download **TV-Home-Studio-1.5.apk** for your Android phone, or **TV-Home-4.5.apk** for computer installation.
 2. Follow [INSTALL.md](docs/INSTALL.md), then select **This home**.
 3. Choose your design, add your own wallpapers, and review cleanup separately.
 

@@ -2,7 +2,7 @@ plugins { id 'com.android.application' }
 android {
     namespace 'com.veyra.tvmanager'
     compileSdk 34
-    defaultConfig { applicationId 'com.veyra.tvmanager'; minSdk 28; targetSdk 34; versionCode 5; versionName '1.4'; testInstrumentationRunner 'com.veyra.tvmanager.StudioInstrumentation' }
+    defaultConfig { applicationId 'com.veyra.tvmanager'; minSdk 28; targetSdk 34; versionCode 6; versionName '1.5'; testInstrumentationRunner 'com.veyra.tvmanager.StudioInstrumentation' }
     compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
     lint { disable 'ExpiredTargetSdkVersion' }
     sourceSets.main.java.srcDir '../common/src/main/java'

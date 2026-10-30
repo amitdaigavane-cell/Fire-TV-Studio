@@ -11,15 +11,15 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
-/** Low-priority local log stream, limited at source to system activity-start tags. */
+/** Low-priority local log stream, limited at source to activity-start and activity-resume tags. */
 final class HomePressWatcher implements AutoCloseable {
     private volatile boolean closed;
     private volatile Process process;
     private Thread worker;
     private final Handler main;
-    private final Runnable onHome;
+    private final java.util.function.IntConsumer onHome;
 
-    HomePressWatcher(Context context, Handler main, Runnable onHome) {
+    HomePressWatcher(Context context, Handler main, java.util.function.IntConsumer onHome) {
         this.main = main;
         this.onHome = onHome;
         if (context.checkSelfPermission("android.permission.READ_LOGS") != PackageManager.PERMISSION_GRANTED)
@@ -35,8 +35,8 @@ final class HomePressWatcher implements AutoCloseable {
             String since = new SimpleDateFormat("MM-dd HH:mm:ss.SSS", Locale.US).format(new Date());
             long lastSignal = -1000;
             try {
-                Process child = new ProcessBuilder("logcat", "-b", "system", "-v", "brief",
-                        "-T", since, "ActivityManager:I", "ActivityTaskManager:I", "*:S")
+                Process child = new ProcessBuilder("logcat", "-b", "system", "-b", "events", "-v", "brief",
+                        "-T", since, "ActivityManager:I", "ActivityTaskManager:I", "am_resume_activity:I", "wm_resume_activity:I", "*:S")
                         .redirectErrorStream(true).start();
                 process = child;
                 if (closed) { child.destroy(); return; }
@@ -45,9 +45,10 @@ final class HomePressWatcher implements AutoCloseable {
                     String line;
                     while (!closed && (line = reader.readLine()) != null) {
                         long now = SystemClock.uptimeMillis();
-                        if (HomeSignal.matches(line) && now - lastSignal > 250) {
+                        int kind=HomeSignal.kind(line);
+                        if (kind!=HomeSignal.NONE && now - lastSignal > 250) {
                             lastSignal = now;
-                            main.post(() -> { if (!closed) onHome.run(); });
+                            main.post(() -> { if (!closed) onHome.accept(kind); });
                         }
                     }
                 } finally { child.destroy(); process = null; }
