@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.7.0 — 31 October 2026
+
+- Replace the black idle clock with the selected wallpaper, bold clock, weekday, date and selected-city weather. Reuse the wallpaper bitmap and weather cache, with minute-only updates and small text-position shifts.
+- Preserve Home-only activation, first-key dismissal, two-minute idle / fifteen-minute sleep timing, manual Sleep and other apps’ playback policy. Weather Off and per-theme weather visibility are respected.
+- Start the early Home watcher before artwork loading; attach a lightweight startup cover on a new boot before building the full launcher. Same-boot service reconnects keep foreground-aware recovery.
+- When the service is connected, late BOOT_COMPLETED delivery checks the foreground instead of unconditionally launching Home over an app.
+- Studio 1.7 embeds TV Home 4.7. Layout designs are unchanged. Stock Home can still appear before Fire OS connects the service; this is not a zero-flash guarantee.
+
 ## 1.6.0 — 30 October 2026
 
 - Release the hidden Home window’s drawing surface with INVISIBLE instead of retaining an alpha-zero translucent buffer. Keep its view hierarchy for reuse and pause inactive work.

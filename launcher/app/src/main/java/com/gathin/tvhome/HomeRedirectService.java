@@ -50,6 +50,7 @@ public class HomeRedirectService extends AccessibilityService {
     private HomeSurface overlay;
     private volatile boolean attached;
     private boolean windowAdded;
+    private android.widget.FrameLayout startupCover;
     private final Runnable refreshVisibleHome=()->{if(attached&&overlay!=null)overlay.refresh();};
     private long bypassUntil;
     private long returnStartedAt;
@@ -121,7 +122,6 @@ public class HomeRedirectService extends AccessibilityService {
             if(resumedActivity!=null&&resumedActivity.isHomeResumed())showOverlay();else hideOverlay();
             Toast.makeText(this,"Power action unavailable. Please use Settings → My Fire TV → Restart.",Toast.LENGTH_LONG).show();
         });
-        if (overlay == null) overlay = new HomeSurface(new ContextThemeWrapper(this, R.style.Theme_TvHome));
         if (!receiversRegistered) {
             IntentFilter screen = new IntentFilter(Intent.ACTION_SCREEN_OFF);
             screen.addAction(Intent.ACTION_SCREEN_ON);
@@ -141,12 +141,70 @@ public class HomeRedirectService extends AccessibilityService {
         Log.i(TAG, "interactive Home overlay ready");
         if (homeWatcher != null) homeWatcher.close();
         homeWatcher = new HomePressWatcher(this, handler, this::earlyHomeSignal);
+        android.content.SharedPreferences state=getSharedPreferences("tvhome",MODE_PRIVATE);
+        int boot=Settings.Global.getInt(getContentResolver(),Settings.Global.BOOT_COUNT,-1);
+        boolean freshBoot=BootSession.fresh(state.getInt("connected_boot",-1),boot,SystemClock.elapsedRealtime());
+        if(boot>=0)state.edit().putInt("connected_boot",boot).apply();
+        // Attach a cheap first frame before loading app artwork or decoding the wallpaper.
+        // BOOT_COMPLETED is delivered much later on Fire OS; do not wait for it.
+        if(freshBoot&&interactive()&&isEnabled(this)){
+            showStartupCover();
+            return;
+        }
         MainActivity currentHome=MainActivity.currentHome();
         if(currentHome!=null&&currentHome.isHomeResumed()&&!screenOff)
             activityReady(currentHome,currentHome.surface());
         if (getSharedPreferences("tvhome", MODE_PRIVATE).getBoolean("resume_home", false)
                 && interactive()) wakeHome();
         else if(interactive()){recoveryUntil=SystemClock.uptimeMillis()+6000;handler.post(recoveryCheck);}
+    }
+
+    private void showStartupCover(){
+        startupCover=new android.widget.FrameLayout(this);
+        startupCover.setBackgroundColor(0xff080f1b);
+        android.widget.TextView title=new android.widget.TextView(this);
+        title.setText(StudioConfig.read(this).optString("homeName","HOME"));title.setTextColor(0xfff4f6fb);
+        title.setTextSize(24);title.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);title.setGravity(android.view.Gravity.CENTER);
+        startupCover.addView(title,new android.widget.FrameLayout.LayoutParams(-1,-1));
+        WindowManager.LayoutParams params=new WindowManager.LayoutParams(-1,-1,WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
+                WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN|WindowManager.LayoutParams.FLAG_FULLSCREEN
+                        |WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE|WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,PixelFormat.OPAQUE);
+        params.setTitle("TV Home startup");
+        android.widget.FrameLayout cover=startupCover;
+        cover.getViewTreeObserver().addOnDrawListener(new android.view.ViewTreeObserver.OnDrawListener(){
+            private boolean scheduled;
+            @Override public void onDraw(){if(scheduled)return;scheduled=true;handler.post(()->{
+                if(cover.getViewTreeObserver().isAlive())cover.getViewTreeObserver().removeOnDrawListener(this);
+                if(startupCover!=cover)return;
+                wakeHome();
+                // Keep the cover until the complete Home has drawn, never for ongoing playback.
+                if(overlay!=null&&attached)overlay.getViewTreeObserver().addOnDrawListener(new android.view.ViewTreeObserver.OnDrawListener(){
+                    private boolean drawn;
+                    @Override public void onDraw(){if(drawn)return;drawn=true;handler.post(()->{
+                        if(overlay!=null&&overlay.getViewTreeObserver().isAlive())overlay.getViewTreeObserver().removeOnDrawListener(this);
+                        removeStartupCover();
+                    });}
+                });else removeStartupCover();
+            });}
+        });
+        try{((WindowManager)getSystemService(WINDOW_SERVICE)).addView(cover,params);}
+        catch(RuntimeException e){startupCover=null;Log.w(TAG,"Startup cover unavailable",e);wakeHome();}
+        handler.postDelayed(this::removeStartupCover,6000);
+    }
+    private void removeStartupCover(){
+        if(startupCover==null)return;
+        try{((WindowManager)getSystemService(WINDOW_SERVICE)).removeViewImmediate(startupCover);}
+        catch(IllegalArgumentException ignored){}
+        startupCover=null;
+    }
+    static boolean bootCompleted(){
+        HomeRedirectService s=instance;if(s==null)return false;
+        // A delayed boot broadcast must not drag someone back out of an app or Settings.
+        if(s.interactive()&&!s.attached&&SystemClock.uptimeMillis()>=s.externalLaunchUntil){
+            s.recoverUnknownHome=false;s.recoveryUntil=SystemClock.uptimeMillis()+6000;
+            s.handler.removeCallbacks(s.recoveryCheck);s.handler.post(s.recoveryCheck);
+        }
+        return true;
     }
 
     private boolean interactive(){return ((android.os.PowerManager)getSystemService(POWER_SERVICE)).isInteractive();}
@@ -337,6 +395,7 @@ public class HomeRedirectService extends AccessibilityService {
         }
     }
     private void hideOverlay() {
+        removeStartupCover();
         cancelTransitionRelease();
         handler.removeCallbacks(refreshVisibleHome);
         if (!attached || overlay == null) return;
@@ -361,6 +420,7 @@ public class HomeRedirectService extends AccessibilityService {
         transitionRelease = null;
     }
     private void releaseAfterAppDraw() {
+        removeStartupCover();
         if (!attached) return;
         cancelTransitionRelease();
         overlayPassThrough(true);

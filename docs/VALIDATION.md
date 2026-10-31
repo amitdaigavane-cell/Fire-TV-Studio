@@ -1,3 +1,18 @@
+# Validation — Studio 1.7 / TV Home 4.7
+
+31 October 2026. Physical AFTSS / Fire OS 7.7.1.7 / ARMv7 checks; bounded observations, not a guarantee for other firmware.
+
+- Both APKs build; Android Lint reports zero errors. The phone frontend check passes with no JS errors or horizontal overflow.
+- Thirty Home-return parser/routing cases, twelve wake-policy cases, six boot-session cases, the idle timing boundaries/reset and six computer-helper tests pass.
+- The real two-minute Home idle deadline displayed the selected wallpaper, bold clock, day, date and selected-city weather. The first OK dismissed it without opening an app. Weather was temporarily enabled for that visual check, then the saved Off setting was restored. No user wallpaper is bundled or uploaded with this release.
+- A restart returned to our Home without remote input. The service connected at about 25 seconds uptime. ADB became available at about 30 seconds; sampled frames from that point showed our lightweight startup cover followed by the complete Cinema Home. Earlier startup frames were not captured, so this is not proof that Amazon Home never appeared.
+- Classic, Cinema and Panel each passed opening YouTube, returning via Back to the resumed custom Home, opening Settings and sleep/wake. Saved theme settings were restored afterward. In all three, the Home window was INVISIBLE with no render surface and no keep-screen-on flag while YouTube was open; no startup cover remained.
+- The fifteen-minute sleep deadline is covered by the unchanged policy test; an uninterrupted fifteen-minute physical wait was not repeated. No movie-length playback endurance or controlled FPS benchmark is claimed.
+- Published APK signatures match the preceding release. Neither APK has native ABI-specific libraries, and the TV APK embedded in Studio matches the standalone TV APK exactly.
+- Global Fire OS sleep/screensaver timers remain unchanged. The new idle presentation reuses the wallpaper bitmap and weather cache; it has no continuous animation. Bright/static wallpapers do not guarantee burn-in prevention.
+
+---
+
 # Validation — Studio 1.6 / TV Home 4.6
 
 30 October 2026. Tested on the same AFTSS / Fire OS 7.7.1.7 / ARMv7 stick. Bounded checks, not universal performance or zero-flash guarantees.

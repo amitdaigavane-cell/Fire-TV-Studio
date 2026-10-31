@@ -1,11 +1,15 @@
 package com.gathin.tvhome;
 
 import android.graphics.Color;
+import android.graphics.Typeface;
+import android.graphics.drawable.GradientDrawable;
 import android.os.SystemClock;
+import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.TextView;
+import android.widget.LinearLayout;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
@@ -16,7 +20,8 @@ final class HomeIdle {
     private boolean active, consumeKey;
     private long touched;
     private FrameLayout shade;
-    private TextView clock;
+    private TextView clock, day, date, weather;
+    private LinearLayout information;
     private int position;
     private final Runnable tick=this::tick;
     HomeIdle(HomeSurface home){this.home=home;}
@@ -48,19 +53,35 @@ final class HomeIdle {
         }
         if(action==HomeIdlePolicy.DIM){
             if(shade==null){
-                shade=new FrameLayout(home.getContext());shade.setBackgroundColor(Color.BLACK);
+                shade=new FrameLayout(home.getContext());
                 shade.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);
-                clock=new TextView(home.getContext());clock.setTextColor(0xff444444);clock.setTextSize(22);
-                shade.addView(clock,new FrameLayout.LayoutParams(-2,-2));
+                View contrast=new View(home.getContext());
+                contrast.setBackground(new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT,
+                        new int[]{0xc908101c,0x8808101c,0x1808101c}));
+                shade.addView(contrast,new FrameLayout.LayoutParams(-1,-1));
+                information=new LinearLayout(home.getContext());information.setOrientation(LinearLayout.VERTICAL);
+                day=label(16,0xffd8e4ef);day.setLetterSpacing(.16f);information.addView(day);
+                clock=label(88,Color.WHITE);clock.setLetterSpacing(-.045f);
+                LinearLayout.LayoutParams cp=new LinearLayout.LayoutParams(-1,-2);cp.topMargin=dp(10);information.addView(clock,cp);
+                date=label(24,0xfff0f4fa);LinearLayout.LayoutParams dt=new LinearLayout.LayoutParams(-1,-2);dt.topMargin=dp(6);information.addView(date,dt);
+                weather=label(18,0xffd8e4ef);weather.setMaxLines(2);
+                LinearLayout.LayoutParams wp=new LinearLayout.LayoutParams(-1,-2);wp.topMargin=dp(22);information.addView(weather,wp);
+                FrameLayout.LayoutParams info=new FrameLayout.LayoutParams(Math.min(dp(520),home.getWidth()-dp(128)),-2,Gravity.BOTTOM|Gravity.START);
+                info.leftMargin=dp(64);info.rightMargin=dp(64);info.bottomMargin=dp(62);shade.addView(information,info);
                 home.addView(shade,new FrameLayout.LayoutParams(-1,-1));
             }
-            clock.setText(new SimpleDateFormat("HH:mm",Locale.getDefault()).format(new Date()));
-            // A single position change per minute, no frame-by-frame animation or bright logo.
-            int[][] spots={{1,1},{7,5},{3,7},{6,2},{1,5},{5,7}};int[] spot=spots[position++%spots.length];
-            clock.setTranslationX(Math.max(0,home.getWidth()-180)*spot[0]/8f);
-            clock.setTranslationY(Math.max(0,home.getHeight()-80)*spot[1]/8f);
+            Date now=new Date();Locale locale=Locale.getDefault();
+            clock.setText(new SimpleDateFormat(android.text.format.DateFormat.is24HourFormat(home.getContext())?"HH:mm":"h:mm a",locale).format(now));
+            day.setText(new SimpleDateFormat("EEEE",locale).format(now).toUpperCase(locale));
+            date.setText(new SimpleDateFormat(android.text.format.DateFormat.getBestDateTimePattern(locale,"dMMMMyyyy"),locale).format(now));
+            shade.setBackground(HomeWallpaper.background(home.getContext()));WeatherInfo.bind(weather);
+            // Reuse the wallpaper bitmap and weather cache. Only update once per minute.
+            int[][] spots={{0,0},{8,-6},{-6,-10},{6,4},{-8,6},{0,-4}};int[] spot=spots[position++%spots.length];
+            information.setTranslationX(dp(spot[0]));information.setTranslationY(dp(spot[1]));
         }
         home.postDelayed(tick,60000);
     }
-    private void hide(){if(shade!=null){home.removeView(shade);shade=null;clock=null;}}
+    private int dp(float value){return Math.round(value*home.getResources().getDisplayMetrics().density);}
+    private TextView label(int size,int color){TextView v=new TextView(home.getContext());v.setTextSize(size);v.setTextColor(color);v.setIncludeFontPadding(false);v.setTypeface(Typeface.create("sans-serif",Typeface.BOLD));v.setShadowLayer(dp(3),0,dp(1),0x66000000);return v;}
+    private void hide(){if(shade!=null){WeatherInfo.unbind(weather);home.removeView(shade);shade=null;clock=null;day=null;date=null;weather=null;information=null;}}
 }

@@ -57,3 +57,10 @@ They cover the observed YouTube app-UID Home intent, other app UIDs, exact Home 
 javac -d build/home-idle launcher/app/src/main/java/com/gathin/tvhome/HomeIdlePolicy.java tests/HomeIdlePolicyTest.java
 java -cp build/home-idle com.gathin.tvhome.HomeIdlePolicyTest
 ```
+
+### Boot-session policy
+
+```text
+javac -d build/boot-session launcher/app/src/main/java/com/gathin/tvhome/BootSession.java tests/BootSessionTest.java
+java -cp build/boot-session com.gathin.tvhome.BootSessionTest
+```

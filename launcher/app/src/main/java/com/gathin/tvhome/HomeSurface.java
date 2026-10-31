@@ -184,7 +184,7 @@ public final class HomeSurface extends FrameLayout {
         int index=pinned.indexOf(app.pkg);if(index>0){labels.add("Move left");actions.add(()->{Collections.swap(pinned,index,index-1);saveDock();});}if(index>=0&&index<pinned.size()-1){labels.add("Move right");actions.add(()->{Collections.swap(pinned,index,index+1);saveDock();});}
         labels.add(isHidden?"Show on Home":"Hide from Home");actions.add(()->{if(isHidden)hidden.remove(app.pkg);else hidden.add(app.pkg);prefs.edit().putStringSet("hidden_v3",new HashSet<>(hidden)).apply();changed();});labels.add("App settings");actions.add(()->launch(new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,Uri.parse("package:"+app.pkg))));menu(app.name,labels,actions);
     }
-    private void idleMenu(){menu("Home idle screen",Arrays.asList("On: dim at 2 min, sleep at 15 min","Off: use Fire OS idle settings"),Arrays.asList(()->setIdle(true),()->setIdle(false)));}
+    private void idleMenu(){menu("Home idle screen",Arrays.asList("On: wallpaper at 2 min, sleep at 15 min","Off: use Fire OS idle settings"),Arrays.asList(()->setIdle(true),()->setIdle(false)));}
     private void setIdle(boolean enabled){try{StudioConfig.save(getContext(),StudioConfig.read(getContext()).put("idleScreen",enabled));}catch(Exception e){Toast.makeText(getContext(),"Could not save idle setting",Toast.LENGTH_SHORT).show();}}
     private void customize(){
         List<String> names=new ArrayList<>(Arrays.asList("Home screen","Themes","Home idle screen","Hidden apps","Network settings"));
