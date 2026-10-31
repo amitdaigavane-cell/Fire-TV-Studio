@@ -17,7 +17,7 @@ import java.util.Locale;
 /** Runs only in the focused Home surface. No service, media polling or global timeout changes. */
 final class HomeIdle {
     private final HomeSurface home;
-    private boolean active, consumeKey;
+    private boolean active, consumeKey, dismissing;
     private long touched;
     private FrameLayout shade;
     private TextView clock, day, date, weather;
@@ -32,12 +32,12 @@ final class HomeIdle {
         else stop();
     }
     void stop(){
-        active=false;home.setKeepScreenOn(false);home.removeCallbacks(tick);hide();
+        active=false;home.setKeepScreenOn(false);home.removeCallbacks(tick);hide(false);
     }
     boolean key(KeyEvent e){
         if(e.getAction()==KeyEvent.ACTION_DOWN){
             if(shade!=null)consumeKey=true;
-            hide();touched=SystemClock.uptimeMillis();home.removeCallbacks(tick);
+            hide(true);touched=SystemClock.uptimeMillis();home.removeCallbacks(tick);
             if(active)home.postDelayed(tick,HomeIdlePolicy.DIM_MS);
         }
         boolean result=consumeKey;
@@ -52,6 +52,7 @@ final class HomeIdle {
             stop();HomeRedirectService.sleep();return;
         }
         if(action==HomeIdlePolicy.DIM){
+            boolean entering=shade==null;
             if(shade==null){
                 shade=new FrameLayout(home.getContext());
                 shade.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);
@@ -78,10 +79,29 @@ final class HomeIdle {
             // Reuse the wallpaper bitmap and weather cache. Only update once per minute.
             int[][] spots={{0,0},{8,-6},{-6,-10},{6,4},{-8,6},{0,-4}};int[] spot=spots[position++%spots.length];
             information.setTranslationX(dp(spot[0]));information.setTranslationY(dp(spot[1]));
+            if(entering&&StudioConfig.flag(home.getContext(),"animations")){
+                shade.setTranslationY(home.getHeight());
+                shade.animate().translationY(0).setDuration(340)
+                        .setInterpolator(new android.view.animation.DecelerateInterpolator(2f)).start();
+            }
         }
         home.postDelayed(tick,60000);
     }
     private int dp(float value){return Math.round(value*home.getResources().getDisplayMetrics().density);}
     private TextView label(int size,int color){TextView v=new TextView(home.getContext());v.setTextSize(size);v.setTextColor(color);v.setIncludeFontPadding(false);v.setTypeface(Typeface.create("sans-serif",Typeface.BOLD));v.setShadowLayer(dp(3),0,dp(1),0x66000000);return v;}
-    private void hide(){if(shade!=null){WeatherInfo.unbind(weather);home.removeView(shade);shade=null;clock=null;day=null;date=null;weather=null;information=null;}}
+    private void hide(boolean animated){
+        if(shade==null)return;
+        if(!animated){removeShade();return;}
+        if(dismissing)return;
+        if(!active||!home.hasWindowFocus()||!StudioConfig.flag(home.getContext(),"animations")){removeShade();return;}
+        dismissing=true;WeatherInfo.unbind(weather);
+        shade.animate().cancel();
+        shade.animate().translationY(-home.getHeight()).setDuration(260)
+                .setInterpolator(new android.view.animation.AccelerateDecelerateInterpolator())
+                .withEndAction(this::removeShade).start();
+    }
+    private void removeShade(){
+        if(shade!=null){shade.animate().withEndAction(null);shade.animate().cancel();WeatherInfo.unbind(weather);home.removeView(shade);}
+        shade=null;clock=null;day=null;date=null;weather=null;information=null;dismissing=false;
+    }
 }

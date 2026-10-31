@@ -1,65 +1,129 @@
 # TV Home Studio
 
-**Your Fire TV. Three homes. No root.** A native TV launcher and Android phone companion for a quieter, more personal home screen.
+**Three launcher designs for your Fire TV. No root required.**
 
-> **Credits first:** built from [itsmeterrylin/fire-tv-cleanup](https://github.com/itsmeterrylin/fire-tv-cleanup), a fork of the original [Gathin23/cleanyourtv](https://github.com/Gathin23/cleanyourtv). The phone cleanup workflow was inspired by [udhaykumarbala/cleanyourtv-app](https://github.com/udhaykumarbala/cleanyourtv-app). Thank you to all three projects. This is an independent adaptation, not their official release. [Credits, provenance and licenses](docs/CREDITS.md).
->
-> **Completely vibe coded with Codex**, iterated by testing on a real Fire TV Stick HD. Experimental community software; not an independently audited product.
+**Credits:** [cleanyourtv](https://github.com/Gathin23/cleanyourtv) → [fire-tv-cleanup](https://github.com/itsmeterrylin/fire-tv-cleanup); phone workflow inspired by [cleanyourtv-app](https://github.com/udhaykumarbala/cleanyourtv-app). [Licenses and attribution](docs/CREDITS.md).
 
-[Download APKs](https://github.com/sreeego/tv-home-studio/releases/tag/v1.7.0) · [Install from your phone](docs/INSTALL.md#with-an-android-phone) · [Install from a computer](docs/INSTALL.md#with-a-computer) · [Build it yourself](docs/BUILD.md)
+**Completely vibe coded with Codex.** Community software, tested on a Fire TV Stick HD.
 
-![Classic, Cinema and Panel on a real Fire TV Stick HD](docs/images/comparison.png)
+## Choose how to install
 
-## Three designs, one launcher
-
-| Classic | Cinema | Panel |
+| I want to use… | Download | What it does |
 | --- | --- | --- |
-| Familiar favorites and an app grid, mint accents and a quiet toolbar. | Centered bold clock, floating app dock and a gentle focus lift. | Sidebar navigation cards, a compact app grid and a clock at the bottom. |
+| **My Android phone** — easiest | **[Phone app](https://github.com/sreeego/tv-home-studio/releases/download/v1.7.1/TV-Home-Studio-Phone-1.7.1.apk)** | Installs the launcher on your Fire TV and lets you customize it from your phone. |
+| **My computer** | **[TV launcher](https://github.com/sreeego/tv-home-studio/releases/download/v1.7.1/TV-Home-Launcher-4.7.1.apk)** | The launcher APK to install directly on Fire TV using ADB. |
 
-Switch from **TV → Customize → Themes**, or explicitly apply a design in the phone app. Each design remembers its own wallpapers and visibility options. There is one launcher APK, not three separate installations.
+**Pick one method. The phone app already includes the TV launcher.**
 
-[Classic full screenshot](docs/images/classic.png) · [Cinema full screenshot](docs/images/cinema.png) · [Panel full screenshot](docs/images/panel.png)
+### Using a phone
 
-These are direct 1920 × 1080 captures from the maintainer's Fire TV, not mockups. Wallpapers and third-party app artwork shown belong to their owners and are **not bundled**. Installed apps such as Veyra shown in the captures are separate apps; this project does not distribute them or any IPTV playlists.
+1. Install the **Phone app** on your Android phone.
+2. Enable **ADB debugging** on Fire TV. Connect both devices to the same local network.
+3. In the phone app, connect to the TV's IP address and approve the TV's authorization prompt.
+4. Tap **Install TV Home**, then choose **This home**.
 
-## What this version adds
+[Full phone setup →](docs/INSTALL.md#with-an-android-phone)
 
-This is the feature set of this adaptation, not a claim that upstream projects lack every feature listed here:
+### Using a computer
 
-- Three distinct native layouts with TV-remote focus navigation; change themes on the TV or phone.
-- Per-design wallpapers, optional rotation, element visibility, focus animation controls and reset-to-default options. Recommended wallpaper: **1920 × 1080, 16:9**; JPEG/PNG/WebP, up to eight per design. 4K imports are resized.
-- A shared, editable Home name. Favorites, hidden apps, Cast, Settings, optional Inputs, Sleep and Restart. Device support and Fire OS permissions apply.
-- Weather for a city **you select**, or Off. No automatic IP-location lookup.
-- A phone app that installs the launcher, applies designs, uploads wallpapers, manages optional extras and saves restore points. No phone-remote clone.
-- Reversible cleanup of explicitly chosen extras: disables packages, never uninstalls them or clears their data. Original states are recorded before changes.
-- Best-effort update restrictions and a resume option in Studio. Protected updaters can refuse changes; this is **not** a guaranteed OTA block.
-- A Python + ADB computer installer with explicit cleanup selection and restore support. No Python packages beyond the standard library.
-- Home-only idle screen: your wallpaper, a bold clock, day/date and selected-city weather after two idle minutes, then sleep after fifteen. Turn it off from TV Customize or phone Themes. Normal system timeouts and other apps’ playback behavior are unchanged; manual Sleep works. Text shifts slightly each minute; bright or static wallpapers are not burn-in protection.
-- No accounts, ads or analytics in this project. Phone-to-TV control uses authorized ADB on your local network.
+1. Download the **TV launcher** and install Android SDK Platform Tools (ADB) on your computer.
+2. Enable **ADB debugging** on Fire TV and connect it to the same local network.
+3. Follow the computer guide to install the APK and enable Home switching.
 
-## About the Amazon Home flash
+[Computer commands and setup →](docs/INSTALL.md#with-a-computer)
 
-The problem that motivated this work was briefly seeing Amazon Home during launcher transitions. This version removes the **timed overlay-to-activity handoff** from our Home path. Version 4.5 added detection of app-initiated Home requests (including Back from YouTube) and existing Home-task resumes. Version 4.6 retains the Home view hierarchy but makes its window INVISIBLE outside Home so Android can release its drawing surface. The activity fallback is also hidden while the service owns Home; there is no continuously rendered translucent Home behind your apps. Wake preparation and service repair are shared by all three themes.
+**Requirements:** Android 9+ phone; Android-based Fire TV API 26+. Fire OS 5/6 and Vega OS are unsupported. [Compatibility details](docs/COMPATIBILITY.md).
 
-Version 4.7 starts the early watcher before loading artwork and attaches a lightweight startup cover at the first service connection in a new boot. A delayed boot broadcast no longer forces Home over an app when the service is connected.
+## See the designs
 
-That is an implementation change, **not a promise that Amazon Home can never appear**. Fire OS controls the system Home activity; startup, service termination, permission changes, Settings transitions and different firmware can still expose it. Amazon Home remains installed and enabled so Settings and recovery remain available. There is no root or firmware patch.
+![Classic, Cinema, Panel and screensaver — weather and location hidden](docs/images/comparison.png)
 
-## Compatibility and current status
+Open full screenshots: **[Classic](docs/images/classic.png)** · **[Cinema](docs/images/cinema.png)** · **[Panel](docs/images/panel.png)** · **[Screensaver](docs/images/screensaver.png)** · [Theme picker](docs/images/theme-menu.png)
 
-- Physically tested: **Fire TV Stick HD, AFTSS, Fire OS 7.7.1.7 / Android 9, `armeabi-v7a` (32-bit ARM)**. ARMv7 works on this device; both APKs contain no bundled native libraries and need no architecture-specific download.
-- Launcher minimum: Android 8 / API 26 on Android-based Fire TV. Phone minimum: Android 9.
-- Uses classic authorized ADB over TCP, usually port 5555. Newer firmware may restrict it. Vega OS and Android wireless-debugging TLS pairing are not supported.
-- Other Android-based Fire TV models are unverified; integrated-TV Inputs, IR/power behavior and OEM restrictions vary.
-- Fire OS 5/6 are below the minimum API level. Non-Fire Android TV / Google TV are outside this fork's installer support, even where upstream supports them.
-- Current release: **Studio 1.7 + TV Home 4.7**. See the [compatibility matrix and limitations](docs/COMPATIBILITY.md) and [validation](docs/VALIDATION.md).
+Real captures from a Fire TV Stick HD, with weather and location hidden. Wallpapers and third-party apps shown are not bundled.
 
-## Get started
+## What you get
 
-1. **Most users:** [download the PHONE app](https://github.com/sreeego/tv-home-studio/releases/download/v1.7.0/PHONE-TV-Home-Studio-1.7.apk) and install it on your Android phone. It includes and installs the TV launcher; **you do not need both APKs**. The **TV-ONLY-Launcher-4.7.apk** is only for manual installation onto Fire TV from a computer.
-2. Follow [INSTALL.md](docs/INSTALL.md), then select **This home**.
-3. Choose your design, add your own wallpapers, and review cleanup separately.
+- **Three designs:** Classic, Cinema and Panel; switch on the TV or from your phone.
+- **Your own look:** separate wallpapers and optional elements for each design, wallpaper rotation, a custom Home name and animation controls.
+- **Organized apps:** favorites, ordering, hidden apps and an app library.
+- **Everyday controls:** Cast, Settings, supported TV inputs, Sleep and Restart.
+- **Weather and idle screen:** optional city weather, a wallpaper screensaver with swipe animation, and Home-only idle sleep.
+- **Device care:** optional reversible cleanup, update restrictions, restore points and Home-switching repair.
 
-[Recovery and troubleshooting](docs/INSTALL.md#recovery) · [Privacy and permissions](docs/PRIVACY.md) · [Full guide](docs/GUIDE.md)
+<details>
+<summary><strong>All launcher features</strong></summary>
 
-MIT for this project's code, retaining upstream notices. AdbLib code uses BSD 3-Clause; all bundled third-party notices are in [licenses/](licenses/) and [THIRD-PARTY-NOTICES.txt](THIRD-PARTY-NOTICES.txt). Wallpaper and app trademarks are not covered by the code license.
+| Feature | What you can do |
+| --- | --- |
+| **Classic** | Use favorites above an app grid, with mint focus accents and a compact toolbar. |
+| **Cinema** | Use a floating horizontal app dock, a bold centered clock and an app caption above the dock. |
+| **Panel** | Use sidebar navigation cards, an app grid and a clock at the bottom of the sidebar. |
+| Theme switching | Choose a design from **TV → Customize → Themes** or explicitly apply it in the phone app. One APK includes all three designs; only one is active. |
+| Independent theme settings | Each design remembers its wallpapers, rotation, optional elements and animation setting. Editing an inactive design does not switch the TV. Reset a design's options without deleting its wallpapers. |
+| Your Home name | Replace “HOME” with your own name, shared across the three layouts and the phone app. |
+| Wallpapers | Upload your own JPEG, PNG or WebP images; use up to eight per design, automatic rotation or **Next wallpaper** on the TV. Recommended: **1920 × 1080, 16:9 landscape**. 4K imports are resized; other shapes are center-cropped. No wallpaper is bundled. |
+| Optional elements | Show or hide the clock, greeting, weather, connection/free-space status, Cast and Power for each design. Turn focus and screensaver animations on or off. |
+| App library and favorites | Open TV apps, pin up to four favorites, reorder them left/right and remove favorites. Hold OK or press Menu on an app for its options. |
+| Hidden apps | Hide apps from Home and bring them back through Hidden apps or the phone. Hiding does not uninstall or disable them. Open an app's system settings from its menu. |
+| Remote navigation | Navigate with the TV remote's D-pad and OK. Back clears the selection or returns to Home; the heading changes to the selected app name and returns to its greeting when no app is selected. |
+| Weather | Choose a city or leave weather Off. Cached forecasts, a manual refresh option and per-theme visibility. No automatic IP-location lookup. |
+| Wallpaper screensaver | On Home only, show the wallpaper, bold clock, weekday, date and optional city weather after two idle minutes. Brief slide-up entrance and upward swipe dismissal; subtle text-position changes once per minute. The first key dismisses without opening an app. |
+| Idle and power | Sleep after fifteen idle minutes on Home, or use manual **Sleep** / **Restart** from Power. Turn the Home idle screen off from TV Customize or phone Themes. Other apps keep their own playback/idle behavior; global Fire OS timeouts are unchanged. |
+| Cast, Settings and network | Open Fire TV Display Mirroring, system Settings or network settings directly from Home. Availability depends on the device. |
+| TV inputs | Show an Inputs menu for supported integrated TVs. Choose automatic detection, always show or hide; sticks normally have no TV inputs to expose. |
+| Home selection and recovery | Switch between **Default home** and **This home**, with shared Home-button/Back-return handling, startup and wake recovery across all layouts. The phone provides a Home-switching repair action. |
+| Lightweight rendering | Native Java views, cached artwork/wallpaper/weather, no video wallpaper or continuous screensaver animation. Hidden Home releases its drawing surface and pauses idle work while another app is in front. |
+
+</details>
+
+<details>
+<summary><strong>All phone app and computer-tool features</strong></summary>
+
+- **Install or update the launcher** over authorized ADB on your local network. The phone APK contains the matching TV APK and sets up the required Home-switching permissions.
+- **Customize without reinstalling:** switch designs, upload wallpapers, change element visibility, set your Home name and city, manage favorites/hidden apps, and toggle the idle screen.
+- **Reversible cleanup:** select optional system extras to disable or re-enable. The tool records their original states; it does not uninstall packages or clear app data.
+- **Update controls:** restrict known Amazon updater components or resume access. Fire OS can protect those components, so this is best effort, not a guaranteed OTA block. Router/DNS settings are not changed.
+- **Restore points:** save, export and import the recorded baseline; restore changes made by Studio and review change history. Apps and their data are retained.
+- **Manual computer workflow:** Python + ADB installation, theme/Home selection, status, Home repair, selected cleanup and restoration. The Python helper needs only the standard library.
+- **Privacy:** no project accounts, ads or analytics. ADB authorization keys and restore points stay in local app storage. Weather uses Open-Meteo only when a city is selected. No phone remote-control clone is included.
+
+</details>
+
+## Things to know
+
+- **Amazon Home can still appear** before the service starts or during some system transitions. It stays enabled for Settings and recovery; this is not a guaranteed zero-flash replacement.
+- Update restrictions and Cast/Inputs/Power actions depend on Fire OS permissions and device support.
+- Bright or static wallpapers are not burn-in protection. The screensaver runs only on our Home; other apps keep their own playback/idle behavior.
+
+<details>
+<summary><strong>How Home return works and its limitations</strong></summary>
+
+The launcher avoids the old timed handoff between two Home windows. It detects app-initiated Home returns, including Back from YouTube, prepares for wake and starts a lightweight cover while the full launcher loads at boot. All themes use the same routing.
+
+**Amazon Home can still appear before Fire OS connects our service, or after a service/permission failure or some system transitions.** This is not a zero-flash guarantee. Amazon Home stays enabled for Settings and recovery; there is no root or firmware patch.
+
+Sleep, Restart, Cast and Inputs depend on the TV's firmware and permissions. The wallpaper screensaver is not burn-in protection: bright/static wallpapers can still retain imagery. No universal performance or movie-length playback guarantee is claimed.
+
+</details>
+
+<details>
+<summary><strong>Compatibility and tested hardware</strong></summary>
+
+| Device/software | Status |
+| --- | --- |
+| Fire TV Stick HD — AFTSS, Fire OS 7.7.1.7 / Android 9, **armeabi-v7a** | Physically tested. Both APKs contain no native ABI-specific libraries; ARMv7 needs no special download. |
+| Other Android-based Fire TVs, Android 8 / API 26 or newer | Unverified; firmware, ADB and accessibility restrictions vary. |
+| Android phone | Android 9 or newer. |
+| Fire OS 5/6, Vega OS, non-Fire Android TV / Google TV | Outside this fork's supported installer scope. Fire OS 5/6 are below the launcher's minimum API. |
+| Wireless debugging | Classic authorized ADB over TCP, usually port 5555. Android's newer TLS pairing flow is not supported. |
+
+Upstream device coverage is not a claim of support by this fork. [Detailed compatibility](docs/COMPATIBILITY.md) · [What was tested](docs/VALIDATION.md)
+
+</details>
+
+## Help and source
+
+[Latest release](https://github.com/sreeego/tv-home-studio/releases/latest) · [User guide](docs/GUIDE.md) · [Recovery](docs/INSTALL.md#recovery) · [Changelog](CHANGELOG.md) · [Build from source](docs/BUILD.md) · [Validation](docs/VALIDATION.md) · [Privacy](docs/PRIVACY.md)
+
+MIT for this project's code, with upstream notices retained. AdbLib is BSD 3-Clause. [Full credits and licenses](docs/CREDITS.md). Wallpapers, app artwork and trademarks belong to their owners; no streaming content or IPTV playlists are distributed.

@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.7.1 — 31 October 2026
+
+- Add a 340 ms slide-up screensaver entrance and a 260 ms upward swipe dismissal. Respect each theme’s animation toggle. No continuous animation, idle timing, playback or Home-routing changes.
+- Consume remote keys during dismissal; cancel/remove immediately on focus loss, leaving Home, rebuild or sleep.
+- Replace the public theme, theme-picker and comparison screenshots; add the screensaver. All current screenshots hide weather and location. Expand the README feature catalog and simplify release pages.
+- Studio 1.7.1 embeds TV Home 4.7.1.
+
 ## 1.7.0 — 31 October 2026
 
 - Replace the black idle clock with the selected wallpaper, bold clock, weekday, date and selected-city weather. Reuse the wallpaper bitmap and weather cache, with minute-only updates and small text-position shifts.

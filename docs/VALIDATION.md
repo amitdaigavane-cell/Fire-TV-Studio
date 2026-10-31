@@ -1,3 +1,15 @@
+# Validation — Studio 1.7.1 / TV Home 4.7.1
+
+31 October 2026. The animation change was checked on the same AFTSS / Fire OS 7.7.1.7 stick.
+
+- Both APKs build; Android Lint reports zero errors and phone JavaScript syntax checks pass. The embedded TV APK matches the standalone APK, and signing certificates match prior releases.
+- Recorded the real two-minute idle transition and remote dismissal. Sampled frames show the screensaver sliding into place and swiping upward to reveal Home.
+- Repeated OK presses during dismissal did not open the focused app. Home remained connected and visible; theme, wallpaper, weather, favorites and hidden-app settings were preserved.
+- Startup, wake and app-routing code is unchanged from 1.7.0; those checks are documented below rather than claimed as new tests of this patch.
+- New GitHub screenshots were captured with weather Off and per-theme weather visibility disabled, then original device settings restored.
+
+---
+
 # Validation — Studio 1.7 / TV Home 4.7
 
 31 October 2026. Physical AFTSS / Fire OS 7.7.1.7 / ARMv7 checks; bounded observations, not a guarantee for other firmware.
