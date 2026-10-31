@@ -75,7 +75,7 @@ final class HomeIdle {
             clock.setText(new SimpleDateFormat(android.text.format.DateFormat.is24HourFormat(home.getContext())?"HH:mm":"h:mm a",locale).format(now));
             day.setText(new SimpleDateFormat("EEEE",locale).format(now).toUpperCase(locale));
             date.setText(new SimpleDateFormat(android.text.format.DateFormat.getBestDateTimePattern(locale,"dMMMMyyyy"),locale).format(now));
-            shade.setBackground(HomeWallpaper.background(home.getContext()));WeatherInfo.bind(weather);
+            shade.setBackground(HomeWallpaper.background(home.getContext(),StudioConfig.idleWallpaper(home.getContext())));WeatherInfo.bind(weather);
             // Reuse the wallpaper bitmap and weather cache. Only update once per minute.
             int[][] spots={{0,0},{8,-6},{-6,-10},{6,4},{-8,6},{0,-4}};int[] spot=spots[position++%spots.length];
             information.setTranslationX(dp(spot[0]));information.setTranslationY(dp(spot[1]));

@@ -10,8 +10,8 @@
 
 | I want to use… | Download | What it does |
 | --- | --- | --- |
-| **My Android phone** — easiest | **[Phone app](https://github.com/sreeego/tv-home-studio/releases/download/v1.7.1/TV-Home-Studio-Phone-1.7.1.apk)** | Installs the launcher on your Fire TV and lets you customize it from your phone. |
-| **My computer** | **[TV launcher](https://github.com/sreeego/tv-home-studio/releases/download/v1.7.1/TV-Home-Launcher-4.7.1.apk)** | The launcher APK to install directly on Fire TV using ADB. |
+| **My Android phone** — easiest | **[Phone app](https://github.com/sreeego/tv-home-studio/releases/download/v1.8.0/TV-Home-Studio-Phone-1.8.apk)** | Installs the launcher on your Fire TV and lets you customize it from your phone. |
+| **My computer** | **[TV launcher](https://github.com/sreeego/tv-home-studio/releases/download/v1.8.0/TV-Home-Launcher-4.8.apk)** | The launcher APK to install directly on Fire TV using ADB. |
 
 **Pick one method. The phone app already includes the TV launcher.**
 
@@ -48,7 +48,7 @@ Real captures from a Fire TV Stick HD, with weather and location hidden. Wallpap
 - **Your own look:** separate wallpapers and optional elements for each design, wallpaper rotation, a custom Home name and animation controls.
 - **Organized apps:** favorites, ordering, hidden apps and an app library.
 - **Everyday controls:** Cast, Settings, supported TV inputs, Sleep and Restart.
-- **Weather and idle screen:** optional city weather, a wallpaper screensaver with swipe animation, and Home-only idle sleep.
+- **Weather and idle screen:** optional city weather, a wallpaper screensaver with its own optional image and swipe animation, and Home-only idle sleep.
 - **Device care:** optional reversible cleanup, update restrictions, restore points and Home-switching repair.
 
 <details>
@@ -68,7 +68,7 @@ Real captures from a Fire TV Stick HD, with weather and location hidden. Wallpap
 | Hidden apps | Hide apps from Home and bring them back through Hidden apps or the phone. Hiding does not uninstall or disable them. Open an app's system settings from its menu. |
 | Remote navigation | Navigate with the TV remote's D-pad and OK. Back clears the selection or returns to Home; the heading changes to the selected app name and returns to its greeting when no app is selected. |
 | Weather | Choose a city or leave weather Off. Cached forecasts, a manual refresh option and per-theme visibility. No automatic IP-location lookup. |
-| Wallpaper screensaver | On Home only, show the wallpaper, bold clock, weekday, date and optional city weather after two idle minutes. Brief slide-up entrance and upward swipe dismissal; subtle text-position changes once per minute. The first key dismisses without opening an app. |
+| Wallpaper screensaver | Choose the active theme’s wallpaper or upload a separate screensaver image shared across all designs. On Home only, show that image, bold clock, weekday, date and optional city weather after two idle minutes. Brief slide-up entrance and upward swipe dismissal; subtle text-position changes once per minute. The first key dismisses without opening an app. |
 | Idle and power | Sleep after fifteen idle minutes on Home, or use manual **Sleep** / **Restart** from Power. Turn the Home idle screen off from TV Customize or phone Themes. Other apps keep their own playback/idle behavior; global Fire OS timeouts are unchanged. |
 | Cast, Settings and network | Open Fire TV Display Mirroring, system Settings or network settings directly from Home. Availability depends on the device. |
 | TV inputs | Show an Inputs menu for supported integrated TVs. Choose automatic detection, always show or hide; sticks normally have no TV inputs to expose. |

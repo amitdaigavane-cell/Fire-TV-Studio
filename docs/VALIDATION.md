@@ -1,3 +1,16 @@
+# Validation — Studio 1.8 / TV Home 4.8
+
+31 October 2026. Separate screensaver wallpaper tested on the same AFTSS / Fire OS 7.7.1.7 stick.
+
+- Both APKs build and Android Lint reports zero errors. Signing certificates match earlier releases; Studio embeds the exact standalone TV APK.
+- Twenty-five configuration tests pass, including migration/default theme-following, independent custom image persistence, effective-display invalidation, reset, and invalid image IDs.
+- Phone interface checks pass for single-image selection, cancel without saving, failed upload retaining the old setting, retry/save, unchanged theme wallpapers, persistence across design switches and Use theme wallpaper reset. The bridge is mocked for these phone UI cases; no native phone picker end-to-end test is claimed.
+- On the TV, a nonexistent image was rejected before configuration changed. A different existing uploaded image was then assigned to the screensaver; the actual two-minute idle screen showed it while Cinema's Home wallpaper remained unchanged after dismissal. Reset to theme-following saved successfully. Original TV settings were restored afterward.
+- The three Home screenshots and theme picker remain the weather-free 1.7.1 captures. The screensaver and comparison images are updated with the separate background; neither contains weather or location.
+- No startup, wake, sleep timing or app-routing code changed in this release; previous checks are recorded below.
+
+---
+
 # Validation — Studio 1.7.1 / TV Home 4.7.1
 
 31 October 2026. The animation change was checked on the same AFTSS / Fire OS 7.7.1.7 stick.

@@ -20,7 +20,7 @@ final class StudioConfig {
         JSONObject t=new JSONObject().put("id",id).put("layout",id).put("name",id.equals("classic")?"Classic":id.equals("cinema")?"Cinema":"Panel").put("wallpapers",new JSONArray()).put("rotateMinutes",0).put("inputs","auto");
         for(String flag:FLAGS)t.put(flag,true);return t;
     }
-    static JSONObject defaults(){try{return new JSONObject().put("schema",2).put("idleScreen",true).put("homeName","HOME").put("active","classic").put("weather",new JSONObject().put("mode","off")).put("themes",new JSONArray().put(preset("classic")));}catch(JSONException e){throw new IllegalStateException(e);}}
+    static JSONObject defaults(){try{return new JSONObject().put("schema",2).put("idleScreen",true).put("idleWallpaper","").put("homeName","HOME").put("active","classic").put("weather",new JSONObject().put("mode","off")).put("themes",new JSONArray().put(preset("classic")));}catch(JSONException e){throw new IllegalStateException(e);}}
     static JSONObject migrate(JSONObject old)throws JSONException {
         if(old.optInt("schema")!=1)return old;
         JSONObject result=defaults();result.put("weather",old.optJSONObject("weather"));JSONArray list=old.getJSONArray("themes"),out=new JSONArray();Map<String,JSONObject> mapped=new LinkedHashMap<>();String active="classic";
@@ -31,7 +31,7 @@ final class StudioConfig {
     static JSONObject theme(Context c){return active(read(c));}
     static boolean flag(Context c,String name){return theme(c).optBoolean(name,true);}
     static String layout(Context c){return theme(c).optString("layout","classic");}
-    static String effective(JSONObject c)throws JSONException{return new JSONObject().put("idleScreen",c.optBoolean("idleScreen",true)).put("homeName",c.optString("homeName","HOME")).put("theme",active(c)).put("weather",c.getJSONObject("weather")).toString();}
+    static String effective(JSONObject c)throws JSONException{return new JSONObject().put("idleScreen",c.optBoolean("idleScreen",true)).put("idleWallpaper",c.optString("idleWallpaper","")).put("homeName",c.optString("homeName","HOME")).put("theme",active(c)).put("weather",c.getJSONObject("weather")).toString();}
     static boolean id(String s){return s!=null&&s.matches("[a-zA-Z0-9_-]{1,48}");}
     static File image(Context c,String id){if(!id(id))throw new IllegalArgumentException("Invalid image ID");File dir=new File(c.getFilesDir(),"wallpapers");dir.mkdirs();return new File(dir,id+".jpg");}
     static JSONObject validate(JSONObject source)throws JSONException{
@@ -39,6 +39,9 @@ final class StudioConfig {
         if(source.toString().length()>40000||source.optInt("schema")!=2)throw new IllegalArgumentException("Unsupported configuration");
         String homeName=source.optString("homeName","HOME").trim();if(homeName.isEmpty()||homeName.length()>24||homeName.matches("(?s).*[\\p{Cntrl}].*"))throw new IllegalArgumentException("Home name must be 1–24 characters on one line");
         JSONObject result=new JSONObject().put("schema",2).put("idleScreen",source.optBoolean("idleScreen",true)).put("homeName",homeName);
+        String idleWallpaper=source.optString("idleWallpaper","");
+        if(!idleWallpaper.isEmpty()&&!id(idleWallpaper))throw new IllegalArgumentException("Invalid screensaver wallpaper");
+        result.put("idleWallpaper",idleWallpaper);
         JSONObject w=source.optJSONObject("weather");if(w==null)w=new JSONObject();String mode=w.optString("mode","off");if(mode.equals("auto"))mode="off";if(!Arrays.asList("off","city").contains(mode))throw new IllegalArgumentException("Invalid weather mode");
         JSONObject weather=new JSONObject().put("mode",mode);
         if(mode.equals("city")){double lat=w.getDouble("latitude"),lon=w.getDouble("longitude");if(!Double.isFinite(lat)||!Double.isFinite(lon)||Math.abs(lat)>90||Math.abs(lon)>180)throw new IllegalArgumentException("Invalid coordinates");String name=w.getString("name").trim();if(name.isEmpty()||name.length()>60)throw new IllegalArgumentException("Invalid location name");weather.put("latitude",lat).put("longitude",lon).put("name",name);}
@@ -52,6 +55,8 @@ final class StudioConfig {
     }
     static synchronized void save(Context c,JSONObject source)throws JSONException{
         JSONObject clean=validate(source),before=read(c);boolean displayChanged=!effective(before).equals(effective(clean));boolean weatherChanged=!before.optJSONObject("weather").toString().equals(clean.getJSONObject("weather").toString());
+        String idleWallpaper=clean.optString("idleWallpaper","");
+        if(!idleWallpaper.isEmpty()&&!image(c,idleWallpaper).isFile())throw new IllegalArgumentException("Upload screensaver wallpaper before saving");
         for(int i=0;i<clean.getJSONArray("themes").length();i++){JSONArray images=clean.getJSONArray("themes").getJSONObject(i).getJSONArray("wallpapers");for(int j=0;j<images.length();j++)if(!image(c,images.getString(j)).isFile())throw new IllegalArgumentException("Upload wallpaper before saving theme");}
         if(!prefs(c).edit().putString("studio_config",clean.toString()).putLong("ui_revision",prefs(c).getLong("ui_revision",0)+(displayChanged?1:0)).commit())throw new IllegalStateException("Unable to save configuration");
         if(weatherChanged)WeatherInfo.invalidate();if(displayChanged)HomeRedirectService.refreshHome();
@@ -64,4 +69,5 @@ final class StudioConfig {
         save(c,config.put("active",id));
     }catch(Exception e){android.widget.Toast.makeText(c,e.getMessage(),android.widget.Toast.LENGTH_LONG).show();}}
     static String wallpaper(Context c){JSONObject t=theme(c);JSONArray a=t.optJSONArray("wallpapers");if(a==null||a.length()==0)return "";int minutes=t.optInt("rotateMinutes");long position=(minutes>0?System.currentTimeMillis()/(minutes*60000L):0)+prefs(c).getInt("wallpaper_index_"+t.optString("id"),0);return a.optString((int)(position%a.length()));}
+    static String idleWallpaper(Context c){String id=read(c).optString("idleWallpaper","");return id.isEmpty()?wallpaper(c):id;}
 }

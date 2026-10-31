@@ -6,12 +6,15 @@ import android.os.Build;
 import android.view.Gravity;
 import java.io.File;
 
-/** One display-sized bitmap at a time; no bundled images or background slideshow service. */
+/** One cached display-sized bitmap; visible Home and a custom idle image may retain separate bitmaps. */
 final class HomeWallpaper {
     private static Bitmap bitmap;
     private static String loaded="uninitialized";
     static Drawable background(Context context){
-        String id=StudioConfig.wallpaper(context);File file=id.isEmpty()?null:StudioConfig.image(context,id);String key=id+":"+(file==null?0:file.lastModified());
+        return background(context,StudioConfig.wallpaper(context));
+    }
+    static Drawable background(Context context,String id){
+        File file=id.isEmpty()?null:StudioConfig.image(context,id);String key=id+":"+(file==null?0:file.lastModified());
         if(!key.equals(loaded)){
             loaded=key;bitmap=null;
             if(file!=null&&file.isFile())try{

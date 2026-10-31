@@ -64,3 +64,7 @@ java -cp build/home-idle com.gathin.tvhome.HomeIdlePolicyTest
 javac -d build/boot-session launcher/app/src/main/java/com/gathin/tvhome/BootSession.java tests/BootSessionTest.java
 java -cp build/boot-session com.gathin.tvhome.BootSessionTest
 ```
+
+### Phone interface checks
+
+With Playwright available to Node and its Chromium browser installed, run `node tests/phone-ui.cjs`. Alternatively set `CHROME_EXECUTABLE` to an installed Chrome binary. The test uses a mocked local TV bridge; it does not contact a real TV. It checks theme settings, cleanup selection, weather controls, and the screensaver image pick/cancel/upload-failure/save/reset workflow. Test screenshots go to ignored `build/phone-ui/`.

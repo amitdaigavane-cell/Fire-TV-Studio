@@ -1,10 +1,10 @@
 # TV Home Studio
 
-TV Home Studio 1.7.1 is an Android phone companion for the included TV Home 4.7.1 launcher. This is a personal sideloaded build, inspired by the reversible workflow in https://github.com/udhaykumarbala/cleanyourtv-app. It does not use that project's app code or claim its device coverage.
+TV Home Studio 1.8 is an Android phone companion for the included TV Home 4.8 launcher. This is a personal sideloaded build, inspired by the reversible workflow in https://github.com/udhaykumarbala/cleanyourtv-app. It does not use that project's app code or claim its device coverage.
 
 ## Install and connect
 
-1. Install **TV-Home-Studio-Phone-1.7.1.apk on the Android phone** (Android 9 or newer). The separate TV-Home-Launcher-4.7.1.apk is for manual TV installation; the companion already includes it.
+1. Install **TV-Home-Studio-Phone-1.8.apk on the Android phone** (Android 9 or newer). The separate TV-Home-Launcher-4.8.apk is for manual TV installation; the companion already includes it.
 2. Put the phone and Fire TV on the same trusted network. On Fire TV, enable Settings → My Fire TV → Developer options → ADB debugging. If Developer options is hidden, select the device name in About seven times.
 3. Enter the TV IP from About → Network, normally port 5555. Accept the phone's authorization prompt on the TV.
 4. Tap Install TV Home. Then choose **This home**. **Default home** switches back to Amazon Home without uninstalling either launcher.
@@ -66,3 +66,9 @@ See [BUILD.md](BUILD.md) for the source tree, prerequisites and build commands.
 ## Home idle screen
 
 Enabled by default. On Home only, your selected wallpaper, a bold clock, day/date and selected-city weather appear after two idle minutes, followed by sleep at fifteen minutes. Text shifts slightly once per minute. Weather remains hidden when Off or disabled for that theme. The first remote key dismisses it without launching anything. Manual Sleep remains available. Set it Off in TV Customize → Home idle screen or phone Themes → Home idle screen to return to Fire OS idle settings. Global sleep/screensaver settings are never changed. Other apps control their own playback and idle behavior. A bright or static wallpaper is not burn-in protection.
+
+### Separate screensaver wallpaper
+
+In the phone app, open **Themes → Home idle screen → Change screensaver wallpaper**. Choose one image and tap **Save screensaver wallpaper**. It applies to the screensaver across all designs; each Home design keeps its own wallpapers. Closing the picker without saving leaves the current setting alone.
+
+To switch back, choose **Use theme wallpaper**, then save. The screensaver follows the active design and its wallpaper rotation again. Recommended: **1920 × 1080, 16:9 landscape**, JPEG/PNG/WebP. Imports are resized and center-cropped. No image is bundled.

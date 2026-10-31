@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.8.0 — 31 October 2026
+
+- Add a separate screensaver wallpaper setting: use the active design’s image/rotation or upload one custom image shared by all designs. Theme wallpapers are unchanged.
+- Add a single-image picker, preview, explicit Save and Use theme wallpaper reset in phone Themes → Home idle screen. Cancel and upload failures keep the previous setting.
+- Preserve existing installations with theme-following as the default. Validate custom image IDs and reject saves before the image exists on the TV.
+- Studio 1.8 embeds TV Home 4.8. Includes the swipe animation, weather-free screenshots and simpler download documentation from 1.7.1.
+
 ## 1.7.1 — 31 October 2026
 
 - Add a 340 ms slide-up screensaver entrance and a 260 ms upward swipe dismissal. Respect each theme’s animation toggle. No continuous animation, idle timing, playback or Home-routing changes.
