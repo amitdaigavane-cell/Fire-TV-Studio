@@ -68,3 +68,14 @@ java -cp build/boot-session com.gathin.tvhome.BootSessionTest
 ### Phone interface checks
 
 With Playwright available to Node and its Chromium browser installed, run `node tests/phone-ui.cjs`. Alternatively set `CHROME_EXECUTABLE` to an installed Chrome binary. The test uses a mocked local TV bridge; it does not contact a real TV. It checks theme settings, cleanup selection, weather controls, and the screensaver image pick/cancel/upload-failure/save/reset workflow. Test screenshots go to ignored `build/phone-ui/`.
+
+
+## GitHub Actions
+
+Every push and pull request builds and lints both apps. You can also run **Actions → Build Android apps → Run workflow**. Each successful run provides two clearly labeled development artifacts: **PHONE** (with the matching TV launcher embedded) and **TV** (direct ADB installation), each with SHA-256 checksums.
+
+CI uses a temporary debug signing key and never publishes a release. Its APKs cannot update over the public release APKs and may not update over earlier CI builds. Use [Releases](https://github.com/sreeego/tv-home-studio/releases/latest) for normal installation; no release signing keys are stored in GitHub Actions.
+
+## Phone app release check
+
+**Check for app updates** is available without connecting to a TV, and from **About & privacy** / **Device care**. It checks GitHub's latest stable release only on request, compares numeric versions, then opens the official release page in the phone's browser. Installation requires the user's normal Android confirmation. After upgrading Studio, reconnect and select **Update / reinstall launcher** to send its bundled launcher to the TV. Offline, rate-limit and timeout failures leave the installed apps unchanged.

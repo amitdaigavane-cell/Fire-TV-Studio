@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased — Studio 1.9 / TV Home 4.9
+
+- Round actual app artwork, remove redundant outer cards, and retain focus outlines in all three layouts.
+- Support six favorites. Classic shows favorites and all other apps; Panel lists apps alphabetically and moves Power, a centered bold clock and status into its sidebar. Remove redundant All apps buttons.
+- Cinema shows favorites plus More apps, with one shared container for the remaining apps. Both docks support a cached wallpaper blur or dark/light shades; settings are available on TV and phone.
+- Discover enabled, exported TV and ordinary launcher entries, including preinstalled apps such as Silk when they expose an entry point. Continue respecting hidden apps.
+- Add an optional event-driven media-session widget, inspired by Idiot Box, with explicit notification-access setup and supported transport controls. No lyrics or screensaver music integration yet.
+- Add an explicit latest-stable-release check to the phone app and GitHub Actions builds with clearly separated development artifacts.
+- Keep sleep, wake, power actions, Home-routing and screensaver policies unchanged. PiP excluded as requested. Amazon screensaver takeover remains unverified without a device.
+- Source/static checks only locally; no local APK build, device test, or new signed release for this change. Screenshots remain from 1.8.
+
 ## 1.8.0 — 31 October 2026
 
 - Add a separate screensaver wallpaper setting: use the active design’s image/rotation or upload one custom image shared by all designs. Theme wallpapers are unchanged.

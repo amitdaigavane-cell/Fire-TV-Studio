@@ -2,9 +2,11 @@
 
 **Three launcher designs for your Fire TV. No root required.**
 
-**Credits:** [cleanyourtv](https://github.com/Gathin23/cleanyourtv) → [fire-tv-cleanup](https://github.com/itsmeterrylin/fire-tv-cleanup); phone workflow inspired by [cleanyourtv-app](https://github.com/udhaykumarbala/cleanyourtv-app). [Licenses and attribution](docs/CREDITS.md).
+**Credits:** [cleanyourtv](https://github.com/Gathin23/cleanyourtv) → [fire-tv-cleanup](https://github.com/itsmeterrylin/fire-tv-cleanup); phone workflow inspired by [cleanyourtv-app](https://github.com/udhaykumarbala/cleanyourtv-app). Music-widget inspiration: [Idiot Box](https://github.com/da-r-k/idiot-box). [Licenses and attribution](docs/CREDITS.md).
 
 **Completely vibe coded with Codex.** Community software, tested on a Fire TV Stick HD.
+
+**Development status:** `main` contains the upcoming Studio 1.9 / TV Home 4.9 changes below. The published downloads remain version 1.8; no new release APKs have been published for these changes. GitHub Actions builds development artifacts on push.
 
 ## Choose how to install
 
@@ -40,7 +42,7 @@
 
 Open full screenshots: **[Classic](docs/images/classic.png)** · **[Cinema](docs/images/cinema.png)** · **[Panel](docs/images/panel.png)** · **[Screensaver](docs/images/screensaver.png)** · [Theme picker](docs/images/theme-menu.png)
 
-Real captures from a Fire TV Stick HD, with weather and location hidden. Wallpapers and third-party apps shown are not bundled.
+Screenshots show version 1.8 before the current icon/dock changes. Real captures from a Fire TV Stick HD, with weather and location hidden. Wallpapers and third-party apps shown are not bundled.
 
 ## What you get
 
@@ -56,15 +58,17 @@ Real captures from a Fire TV Stick HD, with weather and location hidden. Wallpap
 
 | Feature | What you can do |
 | --- | --- |
-| **Classic** | Use favorites above an app grid, with mint focus accents and a compact toolbar. |
-| **Cinema** | Use a floating horizontal app dock, a bold centered clock and an app caption above the dock. |
-| **Panel** | Use sidebar navigation cards, an app grid and a clock at the bottom of the sidebar. |
+| **Classic** | Up to six favorites above all other visible apps; no separate All apps button. Rounded artwork with mint focus outlines. |
+| **Cinema** | Up to six favorites in one dock, followed by a **More apps** tile. A shared dock contains the remaining apps. Bold centered clock and caption above the main dock. |
+| **Panel** | All visible apps alphabetically, without favorites or an All apps button. Power, a bold centered clock, and connection/storage information live in the sidebar. |
+| Cinema dock appearance | Choose wallpaper blur, dark shade or light shade in phone theme options or **TV → Customize → Dock appearance**. Both Cinema docks use the same choice. Blur uses a cached 160-pixel-wide wallpaper sample; shades skip blur allocation/processing. |
+| Optional music widget | Enable **Now playing (requires media access)** in phone theme options, then use **Set up** on the TV to grant notification access if Fire OS exposes it. Shows session title/artist and Play/Pause/Next where the playing app supports them. Off by default, event-driven, no polling or lyric downloads. No music/screensaver integration yet. |
 | Theme switching | Choose a design from **TV → Customize → Themes** or explicitly apply it in the phone app. One APK includes all three designs; only one is active. |
 | Independent theme settings | Each design remembers its wallpapers, rotation, optional elements and animation setting. Editing an inactive design does not switch the TV. Reset a design's options without deleting its wallpapers. |
 | Your Home name | Replace “HOME” with your own name, shared across the three layouts and the phone app. |
 | Wallpapers | Upload your own JPEG, PNG or WebP images; use up to eight per design, automatic rotation or **Next wallpaper** on the TV. Recommended: **1920 × 1080, 16:9 landscape**. 4K imports are resized; other shapes are center-cropped. No wallpaper is bundled. |
 | Optional elements | Show or hide the clock, greeting, weather, connection/free-space status, Cast and Power for each design. Turn focus and screensaver animations on or off. |
-| App library and favorites | Open TV apps, pin up to four favorites, reorder them left/right and remove favorites. Hold OK or press Menu on an app for its options. |
+| App library and favorites | Open apps with TV or ordinary launcher entries, including launchable preinstalled apps, pin up to six favorites for Classic/Cinema, reorder them left/right and remove favorites. Hold OK or press Menu on an app for its options. |
 | Hidden apps | Hide apps from Home and bring them back through Hidden apps or the phone. Hiding does not uninstall or disable them. Open an app's system settings from its menu. |
 | Remote navigation | Navigate with the TV remote's D-pad and OK. Back clears the selection or returns to Home; the heading changes to the selected app name and returns to its greeting when no app is selected. |
 | Weather | Choose a city or leave weather Off. Cached forecasts, a manual refresh option and per-theme visibility. No automatic IP-location lookup. |
@@ -80,6 +84,7 @@ Real captures from a Fire TV Stick HD, with weather and location hidden. Wallpap
 <details>
 <summary><strong>All phone app and computer-tool features</strong></summary>
 
+- **Check for phone updates:** use **Check for app updates** to compare with the latest stable GitHub release and open its official download page. Installation requires your normal Android approval; there are no silent installs.
 - **Install or update the launcher** over authorized ADB on your local network. The phone APK contains the matching TV APK and sets up the required Home-switching permissions.
 - **Customize without reinstalling:** switch designs, upload wallpapers, change element visibility, set your Home name and city, manage favorites/hidden apps, and toggle the idle screen.
 - **Reversible cleanup:** select optional system extras to disable or re-enable. The tool records their original states; it does not uninstall packages or clear app data.
@@ -94,6 +99,7 @@ Real captures from a Fire TV Stick HD, with weather and location hidden. Wallpap
 
 - **Amazon Home can still appear** before the service starts or during some system transitions. It stays enabled for Settings and recovery; this is not a guaranteed zero-flash replacement.
 - Update restrictions and Cast/Inputs/Power actions depend on Fire OS permissions and device support.
+- The reported return to Amazon’s screensaver remains under investigation. The existing 15-minute sleep fallback releases keep-awake if sleep cannot be requested; focus loss also returns control to Fire OS. Sleep/wake/power behavior is unchanged in this source update.
 - Bright or static wallpapers are not burn-in protection. The screensaver runs only on our Home; other apps keep their own playback/idle behavior.
 
 <details>
