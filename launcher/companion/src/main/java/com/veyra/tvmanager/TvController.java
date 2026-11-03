@@ -53,7 +53,7 @@ final class TvController implements Closeable {
         verify();JSONObject info=new JSONObject().put("model",model).put("address",address).put("android",command("getprop ro.build.version.release")).put("build",command("getprop ro.build.display.id")).put("installed",packages.contains(HOME)).put("restorePoint",ledger!=null);
         JSONArray cleanup=new JSONArray();for(Map.Entry<String,String> item:CLEAN.entrySet())if(packages.contains(item.getKey()))cleanup.put(new JSONObject().put("package",item.getKey()).put("name",item.getValue()).put("state",packageState(item.getKey())));info.put("cleanup",cleanup);
         JSONArray updates=new JSONArray();for(String pkg:UPDATES)if(packages.contains(pkg))updates.put(new JSONObject().put("package",pkg).put("state",packageState(pkg)).put("background",opMode(pkg)));info.put("updates",updates);
-        if(packages.contains(HOME))try{JSONObject config=provider("read",null);info.put("config",config);info.put("needsUpgrade",config.optInt("launcherVersion")<19);info.put("apps",provider("apps",null).getJSONArray("apps"));}catch(Exception e){info.put("needsUpgrade",true);}
+        if(packages.contains(HOME))try{JSONObject config=provider("read",null);info.put("config",config);info.put("needsUpgrade",config.optInt("launcherVersion")<18);info.put("apps",provider("apps",null).getJSONArray("apps"));}catch(Exception e){info.put("needsUpgrade",true);}
         info.put("history",ledger==null?new JSONArray():ledger.optJSONArray("history"));return info;
     }
     private void ensureLedger()throws Exception{
@@ -87,7 +87,7 @@ final class TvController implements Closeable {
         ensureLedger();boolean selectedHome=servicePresent(command("settings get secure enabled_accessibility_services"));progress.show("Uploading the bundled TV Home launcher…");String path="/data/local/tmp/tvstudio-home.apk";
         File apk=new File(context.getCacheDir(),"launcher.apk");try(InputStream in=context.getAssets().open("TV-Home.apk");OutputStream out=new FileOutputStream(apk)){copy(in,out,20*1024*1024);}try(InputStream in=new FileInputStream(apk)){adb.push(in,path,apk.length());}
         try{String output=command("pm install -r "+path);if(!output.contains("Success"))throw new IOException(output+". Existing launcher data was preserved; do not uninstall to work around a signing mismatch.");}finally{try{command("rm -f "+path);}catch(Exception ignored){}}
-        loadPackages();command("pm grant "+HOME+" android.permission.WRITE_SECURE_SETTINGS");command("pm grant "+HOME+" android.permission.READ_LOGS");if(selectedHome){provider("home","this");JSONObject repair=provider("repairHome",null);awaitHome(repair.optLong("previousConnection"));}record("TV Home 4.9 installed; Home switching permissions granted");return status();
+        loadPackages();command("pm grant "+HOME+" android.permission.WRITE_SECURE_SETTINGS");command("pm grant "+HOME+" android.permission.READ_LOGS");if(selectedHome){provider("home","this");JSONObject repair=provider("repairHome",null);awaitHome(repair.optLong("previousConnection"));}record("TV Home 4.8 installed; Home switching permissions granted");return status();
     }
     JSONObject provider(String method,String arg)throws Exception{
         String output=command("content call --uri "+PROVIDER+" --method "+method+(arg==null?"":" --arg "+quote(arg)));

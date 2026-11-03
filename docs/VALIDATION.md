@@ -1,9 +1,3 @@
-## Current development changes (1.9 / 4.9)
-
-This source update has not been tested on a TV or compiled into release APKs locally. JavaScript syntax and source checks were performed; the new workflow builds and lints on GitHub. Development artifacts are not signed release upgrades.
-
-Device follow-up: all three layouts at HD/1080p, six favorites and empty libraries, More/Back navigation, sidebar focus, rounded artwork, both Cinema dock styles and wallpaper rotation, Silk discovery, optional notification access/media controls, and the reported Amazon screensaver takeover. No claim that the takeover is fixed. Sleep/wake/power/Home-routing implementation is unchanged.
-
 # Validation — Studio 1.8 / TV Home 4.8
 
 31 October 2026. Separate screensaver wallpaper tested on the same AFTSS / Fire OS 7.7.1.7 stick.

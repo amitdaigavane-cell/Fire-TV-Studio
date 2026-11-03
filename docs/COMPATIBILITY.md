@@ -49,9 +49,3 @@ Other limits: classic ADB TCP connections only (no TLS pairing UI); optional Cas
 ### Startup in 4.7
 
 The early Home watcher starts before app artwork is loaded. A new-boot connection attaches a lightweight Home cover before building the full surface; the cover is removed when Home draws, when another screen takes over, or after a bounded timeout. Same-boot reconnects retain the existing foreground-aware recovery. With the service connected, a delayed BOOT_COMPLETED delivery checks for Home instead of forcibly launching it over a playing app. This cannot hide frames shown before Fire OS binds the accessibility service. Amazon Home remains enabled for Settings and recovery.
-
-## Optional features in the upcoming source version
-
-Music controls require Android media sessions and notification-listener access exposed by the installed Fire OS. Some devices hide that settings screen; the widget explains this and can be disabled. Player metadata and transport controls depend on each app. No additional Fire OS 6 support or PiP changes are included.
-
-Cinema blur is a static, downsampled wallpaper effect, not live window blur. Dark/light modes skip the blur bitmap and processing. This has not yet been measured on device.

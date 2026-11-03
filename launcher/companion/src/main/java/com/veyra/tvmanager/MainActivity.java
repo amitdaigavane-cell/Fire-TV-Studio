@@ -19,7 +19,6 @@ public final class MainActivity extends Activity {
     private final ExecutorService worker=Executors.newSingleThreadExecutor();
     private String pickerRequest, exportRequest, exportData, importRequest;
     private volatile boolean destroyed;
-    private String updateReleaseUrl;
     private static final String ORIGIN="https://appassets.androidplatform.net/";
     @Override public void onCreate(Bundle saved){
         super.onCreate(saved);web=new WebView(this);web.setBackgroundColor(0xff0b141a);setContentView(web);
@@ -61,31 +60,12 @@ public final class MainActivity extends Activity {
                     case "citySearch":response=citySearch(arg.getString("query"));break;
                     case "export":String data=tv.export();runOnUiThread(()->export(id,data));return;
                     case "importRestore":runOnUiThread(()->{if(importRequest!=null){reply(id,null,"A picker is already open");return;}importRequest=id;try{startActivityForResult(new Intent(Intent.ACTION_OPEN_DOCUMENT).setType("application/json").addCategory(Intent.CATEGORY_OPENABLE),12);}catch(RuntimeException e){importRequest=null;reply(id,null,"No document picker available");}});return;
-                    case "checkAppUpdate":response=checkAppUpdate();break;
-                    case "openAppUpdate":String release=updateReleaseUrl;if(release==null)throw new IOException("Check for an update first");runOnUiThread(()->{try{startActivity(new Intent(Intent.ACTION_VIEW,Uri.parse(release)));reply(id,new JSONObject(),null);}catch(RuntimeException e){reply(id,null,"No browser available to open GitHub");}});return;
                     case "licenses":response=new JSONObject().put("text",TvController.read(getAssets().open("THIRD-PARTY-NOTICES.txt"),30000));break;
                     default:throw new IllegalArgumentException("Unknown action");
                 }
                 reply(id,response,null);
-            }catch(Exception e){if(!tv.connected()&&!Arrays.asList("checkAppUpdate","openAppUpdate","licenses","init").contains(action))event("disconnected","Connection closed");reply(id,null,e.getMessage()==null?e.getClass().getSimpleName():e.getMessage());}});
+            }catch(Exception e){if(!tv.connected())event("disconnected","Connection closed");reply(id,null,e.getMessage()==null?e.getClass().getSimpleName():e.getMessage());}});
         }
-    }
-    private JSONObject checkAppUpdate()throws Exception{
-        updateReleaseUrl=null;
-        HttpURLConnection connection=(HttpURLConnection)new URL("https://api.github.com/repos/sreeego/tv-home-studio/releases/latest").openConnection();
-        connection.setConnectTimeout(6000);connection.setReadTimeout(8000);connection.setInstanceFollowRedirects(false);
-        connection.setRequestProperty("Accept","application/vnd.github+json");connection.setRequestProperty("User-Agent","TV-Home-Studio");
-        try{
-            int status=connection.getResponseCode();if(status!=200)throw new IOException(status==403||status==429?"GitHub is limiting requests. Try again later.":"Could not check releases. Try again later.");
-            JSONObject release;try(InputStream in=connection.getInputStream()){release=new JSONObject(TvController.read(in,262144));}
-            String tag=release.getString("tag_name"),latest=ReleaseVersion.clean(tag),current=getPackageManager().getPackageInfo(getPackageName(),0).versionName;
-            if(release.optBoolean("draft")||release.optBoolean("prerelease"))throw new IOException("No stable release available");
-            String url="https://github.com/sreeego/tv-home-studio/releases/tag/"+tag;
-            if(!url.equals(release.getString("html_url")))throw new IOException("Unexpected release address");
-            boolean available=ReleaseVersion.newer(latest,current);if(available)updateReleaseUrl=url;
-            return new JSONObject().put("current",current).put("latest",latest).put("available",available);
-        }catch(java.net.SocketTimeoutException e){throw new IOException("Update check timed out. Check your internet connection and retry.");}
-        finally{connection.disconnect();}
     }
     private JSONObject citySearch(String query)throws Exception{if(query.length()<2||query.length()>80)throw new IllegalArgumentException("Enter a city name");HttpURLConnection connection=(HttpURLConnection)new URL("https://geocoding-api.open-meteo.com/v1/search?count=6&language=en&format=json&name="+URLEncoder.encode(query,"UTF-8")).openConnection();connection.setConnectTimeout(6000);connection.setReadTimeout(8000);try{if(connection.getResponseCode()!=200)throw new IOException("City search unavailable");try(InputStream in=connection.getInputStream()){return new JSONObject(TvController.read(in,65536));}}finally{connection.disconnect();}}
     private void pick(String id,boolean multiple){if(pickerRequest!=null){reply(id,null,"A photo picker is already open");return;}pickerRequest=id;try{startActivityForResult(new Intent(Intent.ACTION_OPEN_DOCUMENT).setType("image/*").putExtra(Intent.EXTRA_MIME_TYPES,new String[]{"image/jpeg","image/png","image/webp"}).addCategory(Intent.CATEGORY_OPENABLE).putExtra(Intent.EXTRA_ALLOW_MULTIPLE,multiple),10);}catch(RuntimeException e){pickerRequest=null;reply(id,null,"No photo picker available");}}
