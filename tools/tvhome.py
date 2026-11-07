@@ -18,21 +18,8 @@ import time
 
 PACKAGE = 'com.gathin.tvhome'
 PROVIDER = 'content://com.gathin.tvhome.studio'
-CLEAN = {
-    'com.amazon.wirelessmetrics.service': 'Wireless usage metrics',
-    'com.amazon.tv.fw.metrics': 'TV usage metrics',
-    'com.amazon.dp.logger': 'Diagnostic logger',
-    'com.amazon.hybridadidservice': 'Advertising identifier',
-    'com.amazon.neo.minerva': 'Minerva metrics',
-    'com.amazon.neo.minerva.logcat': 'Minerva log collector',
-    'com.amazon.perfcollection': 'Performance collection',
-    'com.amazon.perfc': 'Performance reporting',
-    'com.amazon.kso.blackbird': 'Promotional content',
-    'com.amazon.sneakpeek': 'Content previews',
-    'com.amazon.tv.easyupgrade': 'Upgrade promotion',
-    'com.amazon.shoptv.client': 'Amazon shopping',
-    'com.amazon.shoptv.firetv.client': 'Fire TV shopping',
-}
+CLEAN = json.loads((Path(__file__).resolve().parents[1] / 'launcher/common/cleanup-packages.json').read_text(encoding='utf-8'))
+
 STATES = {0: 'default-state', 1: 'enable', 2: 'disable',
           3: 'disable-user', 4: 'disable-until-used'}
 

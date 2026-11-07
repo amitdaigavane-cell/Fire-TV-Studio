@@ -17,3 +17,5 @@
 
 /* Cinema: bold time, caption aligned to the floating dock. */
 .preview.cinema .pstage strong{font-weight:700}.preview.cinema .pstage span{text-align:left;max-width:94%;margin:7px auto 0;padding:0 10px}
+
+.updateNotice{max-width:760px;margin:0 auto;padding:0 24px}.updateNotice button{font-size:13px;text-align:left;min-height:40px;padding:9px 14px}

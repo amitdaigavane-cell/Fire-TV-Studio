@@ -26,6 +26,11 @@ public class ConfigTest {
   if(!c.getString("idleWallpaper").equals("image_idle")||!themes.equals(c.getJSONArray("themes").toString())||originalEffective.equals(StudioConfig.effective(c)))throw new AssertionError("Independent screensaver image lost or changed themes");cases++;
   c=StudioConfig.validate(c.put("idleWallpaper",""));if(!originalEffective.equals(StudioConfig.effective(c)))throw new AssertionError("Use theme wallpaper did not reset");cases++;
   reject(StudioConfig.defaults().put("idleWallpaper","../../secret"));reject(StudioConfig.defaults().put("idleWallpaper","https://example.com/image.jpg"));
+  c=StudioConfig.validate(StudioConfig.defaults().put("weather",new JSONObject().put("mode","off").put("unit","fahrenheit")));if(!c.getJSONObject("weather").getString("unit").equals("fahrenheit"))throw new AssertionError("Weather unit lost while off");cases++;
+  reject(StudioConfig.defaults().put("weather",new JSONObject().put("mode","off").put("unit","kelvin")));
+  c=StudioConfig.defaults();StudioConfig.active(c).put("showMusic",true).put("dockStyle","light");c=StudioConfig.validate(c);if(StudioConfig.active(c).has("showMusic")||!StudioConfig.active(c).getString("dockStyle").equals("light"))throw new AssertionError("Removed widget or dock validation failed");cases++;
+  c=StudioConfig.defaults();StudioConfig.active(c).put("dockStyle","invalid");reject(c);
+  c=StudioConfig.defaults().put("idleWallpaper","idle_image");StudioConfig.active(c).put("wallpapers",new JSONArray().put("classic_image"));c.getJSONArray("themes").put(StudioConfig.preset("cinema").put("wallpapers",new JSONArray().put("cinema_image")));if(!StudioConfig.references(c).equals(new java.util.HashSet<>(java.util.Arrays.asList("idle_image","classic_image","cinema_image"))))throw new AssertionError("Cleanup missed inactive theme or idle references");cases++;
   System.out.println("PASS: "+cases+" configuration validation cases: default privacy, theme selection, input mode, schema, path traversal, rotation, layouts, duplicate IDs, geographic range, image-count limit, unknown-field stripping.");
  }
 }

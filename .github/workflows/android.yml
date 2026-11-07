@@ -36,6 +36,12 @@ jobs:
         run: |
           chmod +x gradlew
           ./gradlew :app:assembleDebug :companion:assembleDebug :app:lintDebug :companion:lintDebug --no-daemon --console=plain
+      - name: Run Python and Java regression checks
+        shell: bash
+        run: |
+          mkdir -p build/test-deps
+          curl --fail --location --retry 3 --output build/test-deps/json.jar https://repo.maven.apache.org/maven2/org/json/json/20240303/json-20240303.jar
+          python3 tools/run_checks.py --variant debug --json-jar build/test-deps/json.jar
       - name: Prepare development downloads
         shell: bash
         run: |

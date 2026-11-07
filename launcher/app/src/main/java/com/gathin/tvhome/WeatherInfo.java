@@ -30,7 +30,8 @@ public final class WeatherInfo {
         String key=weather.toString();if(!key.equals(configKey)){configKey=key;generation++;lastAttempt=0;fetched=0;label="Weather loading…";}
         render(view);long now=System.currentTimeMillis();if((now>=fetched&&now-fetched<3600000)||(now>=lastAttempt&&now-lastAttempt<120000)||!RUNNING.compareAndSet(false,true))return;
         lastAttempt=now;int requestGeneration=generation;Context app=view.getContext().getApplicationContext();
-        new Thread(()->{
+        Thread worker=new Thread(()->{
+            try {
             android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_BACKGROUND);String next;long time=0;
             SharedPreferences cache=app.getSharedPreferences("studio_weather",Context.MODE_PRIVATE);
             try{
@@ -38,15 +39,18 @@ public final class WeatherInfo {
                 else{
                     JSONObject place=weather;
                     JSONObject data=com.veyra.shared.WeatherApi.current(place,com.veyra.shared.WeatherApi::json);double temperature=data.getDouble("temperature_2m");cache.edit().remove("error").apply();
-                    next=place.optString("name","Nearby")+" · "+Math.round(temperature)+"° · "+condition(data.getInt("weather_code"));time=now;cache.edit().putString("key",key).putString("label",next).putLong("fetched",now).apply();
+                    boolean fahrenheit="fahrenheit".equals(place.optString("unit","celsius"));if(fahrenheit)temperature=temperature*9/5+32;
+                    next=place.optString("name","Nearby")+" · "+Math.round(temperature)+(fahrenheit?"°F":"°C")+" · "+condition(data.getInt("weather_code"));time=now;cache.edit().putString("key",key).putString("label",next).putLong("fetched",now).apply();
                 }
             }catch(Exception e){cache.edit().putString("error",e.getMessage()==null?"Weather request failed":e.getMessage()).apply();long cached=cache.getLong("fetched",0);next=key.equals(cache.getString("key",""))&&now>=cached&&now-cached<86400000?cache.getString("label","")+" · Last known":"Weather unavailable";}
-            String result=next;long resultTime=time;MAIN.post(()->{RUNNING.set(false);if(requestGeneration!=generation){for(WeakReference<TextView> ref:new ArrayList<>(VIEWS)){TextView v=ref.get();if(v!=null)bind(v);}return;}label=result;fetched=resultTime;publish();});
-        },"home-weather").start();
+            String result=next;long resultTime=time;MAIN.post(()->{if(requestGeneration!=generation){for(WeakReference<TextView> ref:new ArrayList<>(VIEWS)){TextView v=ref.get();if(v!=null)bind(v);}return;}label=result;fetched=resultTime;publish();});
+            } finally { RUNNING.set(false); }
+        },"home-weather");
+        try{worker.start();}catch(RuntimeException|Error e){RUNNING.set(false);throw e;}
     }
     static JSONObject status(Context c)throws JSONException{SharedPreferences cache=c.getSharedPreferences("studio_weather",Context.MODE_PRIVATE);return new JSONObject().put("label",cache.getString("label","")).put("fetched",cache.getLong("fetched",0)).put("error",cache.getString("error","")).put("running",RUNNING.get());}
     static void retry(){MAIN.post(()->{generation++;lastAttempt=0;fetched=0;for(WeakReference<TextView> ref:new ArrayList<>(VIEWS)){TextView v=ref.get();if(v!=null){v.getContext().getSharedPreferences("studio_weather",Context.MODE_PRIVATE).edit().remove("fetched").apply();bind(v);}}});}
-    private static void render(TextView v){if(!android.text.TextUtils.equals(v.getText(),label))v.setText(label);v.setContentDescription(label+". Celsius. "+ATTRIBUTION);}
+    private static void render(TextView v){if(!android.text.TextUtils.equals(v.getText(),label))v.setText(label);v.setContentDescription(label+". "+ATTRIBUTION);}
     private static void publish(){for(Iterator<WeakReference<TextView>> it=VIEWS.iterator();it.hasNext();){TextView v=it.next().get();if(v==null)it.remove();else render(v);}}
     private static String condition(int code) {
         switch (code) {

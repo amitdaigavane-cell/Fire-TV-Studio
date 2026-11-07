@@ -1,5 +1,24 @@
 # Changelog
 
+## 1.9.0 — 7 November 2026
+
+Studio 1.9 bundles TV Home 4.9.
+
+- Round actual app artwork, remove redundant outer cards, and retain focus outlines in all three layouts.
+- Support six favorites. Classic shows favorites and all other apps; Panel lists apps alphabetically and moves Power, a centered bold clock and status into its sidebar. Remove redundant All apps buttons. Match the Panel Power card to its neighboring sidebar controls.
+- Cinema shows favorites plus More apps, with one shared container for the remaining apps. Both docks support a cached wallpaper blur or dark/light shades; settings are available on TV and phone.
+- Filter user-facing apps using TV launcher metadata, system-app status and a small compatibility list for older built-in consumer apps. Keep Silk, Appstore, Photos and Music without exposing ordinary internal system launchers. Reject inaccessible or permission-protected activities.
+- Add manual running-app inspection and per-app Stop in the phone, plus system app-details access from TV Manage apps. Protected system apps cannot be stopped through this list; there is no automatic task killer.
+- Check for a phone update quietly on launch, at most once per day, with an immediate manual check. Use official GitHub release links; downloads and installation remain user-controlled.
+- Reclaim removed wallpapers and stale uploads, add explicit unused-wallpaper cleanup, and discard abandoned phone image imports. Preserve images referenced by saved themes, the screensaver and recovery settings.
+- Preserve invalid configuration, offer explicit last-good/default recovery, and cache validated settings. Load the app catalog/artwork and wallpapers off the UI thread, with a bounded two-image wallpaper cache.
+- Restore settings even when an old wallpaper image is no longer available; retain existing image references and omit missing files. Settings backups do not contain wallpaper binaries.
+- Add Celsius/Fahrenheit weather display and ensure the weather worker always releases its running flag.
+- Reduce ADB status round trips, avoid unchanged restore-ledger writes and increase file-transfer chunks while respecting the peer's negotiated packet size.
+- Centralize versions and the cleanup package catalog. Build non-debuggable release APKs using the existing distribution certificate; embed the matching TV release in the phone APK. Add Java/Python regression checks to GitHub Actions.
+- Omit the playback widget, PiP and music/lyrics screensaver. Sleep, wake, power, Home-routing and idle timing remain unchanged. The reported Amazon-screensaver takeover is not claimed fixed.
+- Verify the app filter, all three layouts, Settings/Home navigation and Cinema More apps on the AFTSS test stick. Refresh the three layout screenshots with weather/location hidden. See [validation](docs/VALIDATION.md) for build, regression and device checks and their limits.
+
 ## 1.8.0 — 31 October 2026
 
 - Add a separate screensaver wallpaper setting: use the active design’s image/rotation or upload one custom image shared by all designs. Theme wallpapers are unchanged.

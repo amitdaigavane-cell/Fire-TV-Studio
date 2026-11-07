@@ -1,3 +1,22 @@
+# Validation — Studio 1.9 / TV Home 4.9
+
+7 November 2026. Physical checks use the AFTSS Fire TV Stick HD, Fire OS 7.7.1.7 / Android 9 / ARMv7. Checks establish bounded behavior on this device, not universal compatibility.
+
+- Both final release APKs build and Android Lint passes. They are non-debuggable, retain the previous distribution certificate and contain no native ABI-specific libraries. The phone's bundled TV APK matches the standalone TV APK by hash.
+- Six Python tests and eleven standalone Java suites pass. They cover ADB transport, configuration/references, boot, Home-return and wake policy, idle boundaries, process-name parsing, release version comparison and weather parsing, plus 20 app-filter and 14 missing-wallpaper restore cases.
+- Mocked phone interface checks pass, including theme options, image-import save/cancel/failure handling, recovery, weather units, running-app confirmation, update checks and unused-wallpaper cleanup. This is not a native phone picker end-to-end test.
+- TV Home 4.9 installs over 4.8 on the AFTSS test stick. Classic and Cinema show six favorites with rounded artwork and working focus. Panel shows the alphabetical library and sidebar controls. Settings opens and Home returns in all three layouts; Cinema More apps opens its remaining-apps container.
+- Manual sleep makes the device non-interactive; waking restores its interactive state and our Home overlay. Opening Downloader hides the Home overlay, and pressing Home returns to our launcher. Back within Downloader remains in its browser, so that check does not establish app-exit Back behavior. No launcher crash was observed during these checks.
+- The final catalog shows 12 visible apps, retaining Silk, Appstore, Photos and Music while filtering the internal profile picker, system monitor and ordinary system launcher entries. It respects the existing hidden Troubleshooting entry. Amazon Kids is omitted on this stick because its activity requires a permission the launcher does not hold.
+- Cleanup removed 24 unreferenced images while retaining all four referenced theme/screensaver images; a private backup was kept. Restore handling skips missing image references rather than blocking all settings restoration; restore-point JSON does not contain image files.
+- The three public layout screenshots are refreshed from this build without weather or location. The unchanged screensaver and theme-picker captures are retained from earlier releases.
+
+The final Panel Power card styling was built and linted locally after the TV was switched off; the screenshots above precede that small visual change. The new two-minute idle observation was not completed.
+
+The Home idle policy, Home redirection service, boot receiver and Home-press watcher are unchanged from 1.8. The reported Amazon screensaver takeover is not claimed resolved. No movie-length endurance, controlled performance benchmark or zero-Amazon-Home-flash guarantee is claimed.
+
+---
+
 # Validation — Studio 1.8 / TV Home 4.8
 
 31 October 2026. Separate screensaver wallpaper tested on the same AFTSS / Fire OS 7.7.1.7 stick.

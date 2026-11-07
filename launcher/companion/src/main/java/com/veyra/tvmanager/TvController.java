@@ -4,6 +4,7 @@ import android.content.Context;
 import android.util.AtomicFile;
 import android.util.Base64;
 import com.cgutman.adblib.AdbCrypto;
+import com.veyra.shared.CleanupCatalog;
 import org.json.*;
 import java.io.*;
 import java.net.*;
@@ -15,12 +16,12 @@ import java.util.regex.*;
 /** Explicit, reversible operations. No arbitrary command endpoint is exposed to the UI. */
 final class TvController implements Closeable {
     static final String HOME="com.gathin.tvhome", PROVIDER="content://com.gathin.tvhome.studio", SERVICE=HOME+"/"+HOME+".HomeRedirectService";
-    static final LinkedHashMap<String,String> CLEAN=new LinkedHashMap<>();
+    static final LinkedHashMap<String,String> CLEAN=CleanupCatalog.entries();
     static final String[] UPDATES={"com.amazon.tv.forcedotaupdater.v2","com.amazon.device.software.ota","com.amazon.device.software.ota.override"};
-    static {CLEAN.put("com.amazon.wirelessmetrics.service","Wireless usage metrics");CLEAN.put("com.amazon.tv.fw.metrics","TV usage metrics");CLEAN.put("com.amazon.dp.logger","Diagnostic logger");CLEAN.put("com.amazon.hybridadidservice","Advertising identifier");CLEAN.put("com.amazon.neo.minerva","Minerva metrics");CLEAN.put("com.amazon.neo.minerva.logcat","Minerva log collector");CLEAN.put("com.amazon.perfcollection","Performance collection");CLEAN.put("com.amazon.perfc","Performance reporting");CLEAN.put("com.amazon.kso.blackbird","Promotional content");CLEAN.put("com.amazon.sneakpeek","Content previews");CLEAN.put("com.amazon.tv.easyupgrade","Upgrade promotion");CLEAN.put("com.amazon.shoptv.client","Amazon shopping");CLEAN.put("com.amazon.shoptv.firetv.client","Fire TV shopping");}
+
     private final Context context;
     private AdbClient adb;
-    private String identity="", address="", model="";
+    private String identity="", address="", model="", androidVersion="", buildVersion="", savedLedger="";
     private JSONObject ledger;
     private AtomicFile ledgerFile;
     private final Set<String> packages=new HashSet<>(), thirdParty=new HashSet<>();
@@ -44,17 +45,51 @@ final class TvController implements Closeable {
         if(!packages.contains("com.amazon.tv.launcher")||sdk<26){close();throw new IOException("This build supports Android-based Fire TV devices on Android 8 or newer. Other TVs and Vega OS are not supported.");}
         identity=deviceIdentity();String key=hex(MessageDigest.getInstance("SHA-256").digest(identity.getBytes(StandardCharsets.UTF_8)));ledgerFile=new AtomicFile(new File(context.getFilesDir(),"restore-"+key+".json"));ledger=null;
         if(ledgerFile.getBaseFile().exists()){try(InputStream in=ledgerFile.openRead()){ledger=new JSONObject(read(in,2*1024*1024));}if(!identity.equals(ledger.getString("identity")))throw new IOException("Restore point belongs to a different TV");}
+        androidVersion=command("getprop ro.build.version.release");buildVersion=command("getprop ro.build.display.id");
         context.getSharedPreferences("studio",0).edit().putString("lastHost",host).putInt("lastPort",port).apply();return status();
     }
     private String deviceIdentity()throws Exception{String serial=command("getprop ro.serialno");if(serial.isEmpty())serial=command("getprop ro.boot.serialno");if(serial.isEmpty())serial=command("settings get secure android_id");if(serial.isEmpty()||serial.equals("null"))throw new IOException("Cannot identify TV safely");return model+":"+serial;}
     private void verify()throws Exception{if(identity.isEmpty()||!identity.equals(deviceIdentity())){close();throw new IOException("TV identity changed; reconnect before making changes");}}
     private void loadPackages()throws Exception{packages.clear();thirdParty.clear();for(String line:command("pm list packages --user 0").split("\\r?\\n"))if(line.startsWith("package:"))packages.add(line.substring(8).trim());for(String line:command("pm list packages -3 --user 0").split("\\r?\\n"))if(line.startsWith("package:"))thirdParty.add(line.substring(8).trim());}
     JSONObject status()throws Exception{
-        verify();JSONObject info=new JSONObject().put("model",model).put("address",address).put("android",command("getprop ro.build.version.release")).put("build",command("getprop ro.build.display.id")).put("installed",packages.contains(HOME)).put("restorePoint",ledger!=null);
-        JSONArray cleanup=new JSONArray();for(Map.Entry<String,String> item:CLEAN.entrySet())if(packages.contains(item.getKey()))cleanup.put(new JSONObject().put("package",item.getKey()).put("name",item.getValue()).put("state",packageState(item.getKey())));info.put("cleanup",cleanup);
-        JSONArray updates=new JSONArray();for(String pkg:UPDATES)if(packages.contains(pkg))updates.put(new JSONObject().put("package",pkg).put("state",packageState(pkg)).put("background",opMode(pkg)));info.put("updates",updates);
-        if(packages.contains(HOME))try{JSONObject config=provider("read",null);info.put("config",config);info.put("needsUpgrade",config.optInt("launcherVersion")<18);info.put("apps",provider("apps",null).getJSONArray("apps"));}catch(Exception e){info.put("needsUpgrade",true);}
+        verify();loadPackages();Map<String,Integer> states=packageStates();JSONObject info=new JSONObject().put("model",model).put("address",address).put("android",androidVersion).put("build",buildVersion).put("installed",packages.contains(HOME)).put("restorePoint",ledger!=null);
+        JSONArray cleanup=new JSONArray();for(Map.Entry<String,String> item:CLEAN.entrySet())if(packages.contains(item.getKey()))cleanup.put(new JSONObject().put("package",item.getKey()).put("name",item.getValue()).put("state",states.get(item.getKey())));info.put("cleanup",cleanup);
+        JSONArray updates=new JSONArray();for(String pkg:UPDATES)if(packages.contains(pkg))updates.put(new JSONObject().put("package",pkg).put("state",states.get(pkg)).put("background",opMode(pkg)));info.put("updates",updates);
+        if(packages.contains(HOME))try{JSONObject config=provider("read",null);info.put("config",config);info.put("needsUpgrade",config.optInt("launcherVersion")<BuildConfig.BUNDLED_LAUNCHER_VERSION_CODE);info.put("apps",provider("apps",null).getJSONArray("apps"));}catch(Exception e){info.put("needsUpgrade",true);}
         info.put("history",ledger==null?new JSONArray():ledger.optJSONArray("history"));return info;
+    }
+    /** One shell round trip for package states; parse failures stay visible. */
+    private Map<String,Integer> packageStates()throws Exception{
+        LinkedHashSet<String> wanted=new LinkedHashSet<>(CLEAN.keySet());wanted.addAll(Arrays.asList(UPDATES));wanted.retainAll(packages);
+        Map<String,Integer> result=new HashMap<>();if(wanted.isEmpty())return result;
+        StringBuilder script=new StringBuilder();
+        for(String pkg:wanted){packageName(pkg);script.append("printf '\n__TVSTUDIO_PACKAGE:").append(pkg).append("\n'; dumpsys package ").append(quote(pkg)).append(" | sed -n '/User 0:/p'; ");}
+        String output=command(script.toString());
+        for(String part:output.split("__TVSTUDIO_PACKAGE:")){int newline=part.indexOf('\n');if(newline<0)continue;String pkg=part.substring(0,newline).trim();if(wanted.contains(pkg))result.put(pkg,parseState(part.substring(newline+1)));}
+        if(result.size()!=wanted.size())throw new IOException("Could not read app states; reconnect and retry");return result;
+    }
+    private static boolean stoppable(String pkg){return !pkg.equals(HOME)&&!pkg.equals("android")&&!pkg.startsWith("com.android.")&&!pkg.contains("settings")&&!pkg.contains("systemui")&&!pkg.contains("launcher")&&!pkg.contains("inputmethod")&&!pkg.contains("remote")&&!pkg.contains("permissioncontroller");}
+    private Map<String,String> manageableApps()throws Exception{
+        JSONArray apps=provider("apps",null).getJSONArray("apps");Map<String,String> result=new LinkedHashMap<>();
+        for(int i=0;i<apps.length();i++){JSONObject app=apps.getJSONObject(i);String pkg=app.getString("package");packageName(pkg);if(stoppable(pkg))result.put(pkg,app.getString("name"));}return result;
+    }
+    private Set<String> processNames()throws Exception{
+        try{return ProcessSnapshot.names(command("ps -A -o NAME"));}
+        catch(IOException e){return ProcessSnapshot.names(command("ps -A"));}
+    }
+    JSONObject runningApps()throws Exception{
+        verify();Map<String,String> apps=manageableApps();Set<String> names=processNames();JSONArray result=new JSONArray();
+        for(Map.Entry<String,String> app:apps.entrySet())if(ProcessSnapshot.contains(names,app.getKey()))result.put(new JSONObject().put("package",app.getKey()).put("name",app.getValue()));
+        return new JSONObject().put("apps",result).put("scannedAt",System.currentTimeMillis());
+    }
+    JSONObject stopApp(String pkg)throws Exception{
+        packageName(pkg);verify();if(!stoppable(pkg)||!manageableApps().containsKey(pkg))throw new IOException("This app is protected or no longer launchable");
+        command("am force-stop --user 0 "+quote(pkg));JSONObject result=runningApps();result.put("requested",pkg);return result;
+    }
+    JSONObject cleanImages()throws Exception{verify();return provider("cleanImages",null);}
+    JSONObject recoverConfig(String choice)throws Exception{
+        if(!Arrays.asList("last_good","defaults").contains(choice))throw new IllegalArgumentException("Invalid recovery choice");
+        ensureLedger();provider("recoverConfig",choice);record("Launcher configuration recovered: "+choice);return status();
     }
     private void ensureLedger()throws Exception{
         verify();if(ledger!=null){saveLedger();return;}
@@ -63,7 +98,7 @@ final class TvController implements Closeable {
         if(packages.contains(HOME)){String dump=command("dumpsys package "+HOME);ledger.put("readLogsGranted",dump.contains("android.permission.READ_LOGS: granted=true")).put("secureGranted",dump.contains("android.permission.WRITE_SECURE_SETTINGS: granted=true"));try{ledger.put("config",provider("read",null));}catch(Exception ignored){}}
         try{saveLedger();}catch(Exception e){ledger=null;throw e;}
     }
-    private void saveLedger()throws Exception{FileOutputStream out=null;try{out=ledgerFile.startWrite();out.write(ledger.toString(2).getBytes(StandardCharsets.UTF_8));ledgerFile.finishWrite(out);}catch(Exception e){if(out!=null)ledgerFile.failWrite(out);throw e;}}
+    private void saveLedger()throws Exception{String serialized=ledger.toString(2);if(serialized.equals(savedLedger))return;FileOutputStream out=null;try{out=ledgerFile.startWrite();out.write(serialized.getBytes(StandardCharsets.UTF_8));ledgerFile.finishWrite(out);savedLedger=serialized;}catch(Exception e){if(out!=null)ledgerFile.failWrite(out);throw e;}}
     private void record(String text)throws Exception{JSONArray history=ledger.getJSONArray("history");history.put(new JSONObject().put("time",System.currentTimeMillis()).put("message",text));while(history.length()>150)history.remove(0);saveLedger();}
     static boolean servicePresent(String list){for(String entry:list.split(":"))if(entry.equals(SERVICE)||entry.equals(HOME+"/.HomeRedirectService"))return true;return false;}
     static int parseState(String dump)throws IOException{Matcher m=Pattern.compile("User 0:[^\\r\\n]*\\benabled=(\\d+)").matcher(dump);if(!m.find())throw new IOException("Cannot read original app state");int state=Integer.parseInt(m.group(1));if(state<0||state>4)throw new IOException("Unknown app state");return state;}
@@ -87,7 +122,7 @@ final class TvController implements Closeable {
         ensureLedger();boolean selectedHome=servicePresent(command("settings get secure enabled_accessibility_services"));progress.show("Uploading the bundled TV Home launcher…");String path="/data/local/tmp/tvstudio-home.apk";
         File apk=new File(context.getCacheDir(),"launcher.apk");try(InputStream in=context.getAssets().open("TV-Home.apk");OutputStream out=new FileOutputStream(apk)){copy(in,out,20*1024*1024);}try(InputStream in=new FileInputStream(apk)){adb.push(in,path,apk.length());}
         try{String output=command("pm install -r "+path);if(!output.contains("Success"))throw new IOException(output+". Existing launcher data was preserved; do not uninstall to work around a signing mismatch.");}finally{try{command("rm -f "+path);}catch(Exception ignored){}}
-        loadPackages();command("pm grant "+HOME+" android.permission.WRITE_SECURE_SETTINGS");command("pm grant "+HOME+" android.permission.READ_LOGS");if(selectedHome){provider("home","this");JSONObject repair=provider("repairHome",null);awaitHome(repair.optLong("previousConnection"));}record("TV Home 4.8 installed; Home switching permissions granted");return status();
+        loadPackages();command("pm grant "+HOME+" android.permission.WRITE_SECURE_SETTINGS");command("pm grant "+HOME+" android.permission.READ_LOGS");if(selectedHome){provider("home","this");JSONObject repair=provider("repairHome",null);awaitHome(repair.optLong("previousConnection"));}record("TV Home "+BuildConfig.BUNDLED_LAUNCHER_VERSION_NAME+" installed; Home switching permissions granted");return status();
     }
     JSONObject provider(String method,String arg)throws Exception{
         String output=command("content call --uri "+PROVIDER+" --method "+method+(arg==null?"":" --arg "+quote(arg)));
@@ -104,9 +139,35 @@ final class TvController implements Closeable {
     JSONObject restore()throws Exception{
         verify();if(ledger==null)throw new IOException("No restore point for this TV");JSONArray results=new JSONArray();JSONObject original=ledger.getJSONObject("packages");for(Iterator<String> it=original.keys();it.hasNext();){String pkg=it.next();try{setPackage(pkg,original.getInt(pkg));results.put(pkg+": restored");}catch(Exception e){results.put(pkg+": "+e.getMessage());}}
         JSONObject ops=ledger.getJSONObject("appops");for(Iterator<String> it=ops.keys();it.hasNext();){String pkg=it.next();try{if(!Arrays.asList(UPDATES).contains(pkg))throw new IOException("Invalid restore entry");String mode=ops.getString(pkg);if(!Arrays.asList("allow","ignore","deny","default","foreground").contains(mode))throw new IOException("Invalid app-op");command("cmd appops set "+pkg+" RUN_ANY_IN_BACKGROUND "+mode);if(!mode.equals(opMode(pkg)))throw new IOException("Read-back differed");results.put(pkg+": background restored");}catch(Exception e){results.put(pkg+": "+e.getMessage());}}
-        if(packages.contains(HOME)){try{if(ledger.has("config")){provider("save",base64(ledger.getJSONObject("config").toString()));JSONObject c=ledger.getJSONObject("config");provider("appsSave",base64(new JSONObject().put("dock",new JSONArray(c.optString("dock","").isEmpty()?Collections.emptyList():Arrays.asList(c.optString("dock","").split(",")))).put("hidden",c.optJSONArray("hidden")).toString()));}provider("home",ledger.optBoolean("homeWasEnabled")?"this":"default");results.put("Home preference restored");}catch(Exception e){results.put("Home: "+e.getMessage());}}
+        if(packages.contains(HOME)){
+            JSONObject c=ledger.optJSONObject("config");
+            if(ledger.has("config")&&c==null)results.put("Launcher appearance: invalid saved configuration");
+            if(c!=null){
+                try{
+                    JSONObject storage=null;
+                    try{storage=provider("read",null).optJSONObject("imageStorage");}catch(Exception ignored){}
+                    provider("save",base64(restoredConfig(c,storage,results).toString()));results.put("Launcher appearance restored");
+                }catch(Exception e){results.put("Launcher appearance: "+e.getMessage());}
+                try{provider("appsSave",base64(new JSONObject().put("dock",new JSONArray(c.optString("dock","").isEmpty()?Collections.emptyList():Arrays.asList(c.optString("dock","").split(",")))).put("hidden",c.optJSONArray("hidden")).toString()));results.put("Favorites and hidden apps restored");}catch(Exception e){results.put("App layout: "+e.getMessage());}
+            }
+            // A missing old wallpaper or invalid appearance must not skip the Home preference.
+            try{provider("home",ledger.optBoolean("homeWasEnabled")?"this":"default");results.put("Home preference restored");}catch(Exception e){results.put("Home: "+e.getMessage());}
+        }
         if(packages.contains(HOME))for(String[] permission:new String[][]{{"readLogsGranted","READ_LOGS"},{"secureGranted","WRITE_SECURE_SETTINGS"}})if(!ledger.optBoolean(permission[0]))try{command("pm revoke "+HOME+" android.permission."+permission[1]);results.put(permission[1]+": restored to ungranted");}catch(Exception e){results.put(permission[1]+": "+e.getMessage());}
         record("Restore requested; individual results reported");return new JSONObject().put("results",results).put("state",status());
+    }
+    /** Restore snapshots contain image IDs, not image files. Never edit the stored baseline. */
+    static JSONObject restoredConfig(JSONObject saved,JSONObject storage,JSONArray results)throws JSONException{
+        JSONObject restored=new JSONObject(saved.toString());JSONArray images=storage==null?null:storage.optJSONArray("images");
+        if(images==null){results.put("Wallpaper availability unavailable; saved image references retained");return restored;}
+        Set<String> available=new HashSet<>(),omitted=new HashSet<>();
+        for(int i=0;i<images.length();i++){JSONObject image=images.getJSONObject(i);String id=image.getString("id");if(!image.getBoolean("staged"))available.add(id);}
+        String idle=restored.optString("idleWallpaper","");if(!idle.isEmpty()&&!available.contains(idle)){omitted.add(idle);restored.put("idleWallpaper","");}
+        JSONArray themes=restored.getJSONArray("themes");
+        for(int i=0;i<themes.length();i++){JSONObject theme=themes.getJSONObject(i);JSONArray old=theme.optJSONArray("wallpapers");if(old==null)continue;JSONArray kept=new JSONArray();
+            for(int j=0;j<old.length();j++){String id=old.getString(j);if(available.contains(id))kept.put(id);else omitted.add(id);}theme.put("wallpapers",kept);}
+        if(!omitted.isEmpty())results.put(omitted.size()+" unavailable wallpaper image(s) omitted; choose their files again to restore them");
+        return restored;
     }
     JSONObject importRestore(String text)throws Exception{
         verify();if(text.length()>2*1024*1024)throw new IOException("Restore file too large");JSONObject incoming=new JSONObject(text);
@@ -121,5 +182,5 @@ final class TvController implements Closeable {
     static String read(InputStream in,int maximum)throws IOException{ByteArrayOutputStream out=new ByteArrayOutputStream();copy(in,out,maximum);return out.toString("UTF-8");}
     static void copy(InputStream in,OutputStream out,int maximum)throws IOException{byte[] b=new byte[8192];int n,total=0;while((n=in.read(b))!=-1){total+=n;if(total>maximum)throw new IOException("File too large");out.write(b,0,n);}}
     boolean connected(){return adb!=null&&adb.isOpen();}
-    @Override public void close(){if(adb!=null)adb.close();adb=null;identity="";ledger=null;ledgerFile=null;packages.clear();thirdParty.clear();}
+    @Override public void close(){if(adb!=null)adb.close();adb=null;identity="";ledger=null;ledgerFile=null;savedLedger="";androidVersion="";buildVersion="";packages.clear();thirdParty.clear();}
 }

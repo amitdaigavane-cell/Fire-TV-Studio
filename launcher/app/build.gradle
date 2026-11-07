@@ -5,6 +5,17 @@ plugins {
 android {
     namespace 'com.gathin.tvhome'
     compileSdk 34
+    signingConfigs {
+        release {
+            if (rootProject.hasReleaseCredentials) {
+                storeFile rootProject.file(rootProject.releaseCredentials.store)
+                storePassword rootProject.releaseCredentials.storePassword
+                keyAlias rootProject.releaseCredentials.alias
+                keyPassword rootProject.releaseCredentials.keyPassword
+            }
+        }
+    }
+
 
     lint {
         // Private sideloaded Fire OS app; not submitted to Google Play.
@@ -15,14 +26,16 @@ android {
         applicationId 'com.gathin.tvhome'
         minSdk 26
         targetSdk 29
-        versionCode 18
-        versionName '4.8'
+        versionCode rootProject.appVersions.getProperty('tvCode').toInteger()
+        versionName rootProject.appVersions.getProperty('tvName')
         testInstrumentationRunner 'com.gathin.tvhome.HomeVisualTest'
     }
 
     buildTypes {
         release {
             minifyEnabled false
+            debuggable false
+            signingConfig signingConfigs.release
         }
     }
 
@@ -39,3 +52,5 @@ dependencies {
 
 
 }
+
+tasks.matching { it.name == 'preReleaseBuild' }.configureEach { dependsOn rootProject.tasks.named('verifyReleaseSigning') }
