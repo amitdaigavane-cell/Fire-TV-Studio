@@ -15,7 +15,7 @@ import java.util.regex.*;
 
 /** Explicit, reversible operations. No arbitrary command endpoint is exposed to the UI. */
 final class TvController implements Closeable {
-    static final String HOME="com.gathin.tvhome", PROVIDER="content://com.gathin.tvhome.studio", SERVICE=HOME+"/"+HOME+".HomeRedirectService";
+    static final String HOME="com.amitd.firetvstudio", PROVIDER="content://com.amitd.firetvstudio.studio", SERVICE=HOME+"/com.gathin.tvhome.HomeRedirectService";
     static final LinkedHashMap<String,String> CLEAN=CleanupCatalog.entries();
     static final String[] UPDATES={"com.amazon.tv.forcedotaupdater.v2","com.amazon.device.software.ota","com.amazon.device.software.ota.override"};
 

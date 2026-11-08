@@ -38,8 +38,8 @@ public class AdbClientTest {
   expect(TvController.parseState("User 0: installed=true hidden=false stopped=false enabled=3\nUser 10: enabled=0")==3,"wrong user state");
   boolean rejected=false;try{TvController.parseState("User 10: enabled=0");}catch(IOException e){rejected=true;}expect(rejected,"missing user 0 accepted");
   expect(TvController.quote("a'b").equals("'a'\\''b'"),"shell quoting broken");
-  expect(TvController.servicePresent("other/service:com.gathin.tvhome/.HomeRedirectService"),"short component not recognized");
-  expect(!TvController.servicePresent("other/com.gathin.tvhome.HomeRedirectService"),"partial component accepted");
+  expect(TvController.servicePresent("other/service:com.amitd.firetvstudio/.HomeRedirectService"),"short component not recognized");
+  expect(!TvController.servicePresent("other/com.amitd.firetvstudio.HomeRedirectService"),"partial component accepted");
   for(int i=0;i<=4;i++)expect(!TvController.modeForState(i).isEmpty(),"restore state missing");
   System.out.println("PASS: RSA auth/key offer, fragmented ADB frames, shell lifecycle, 50KB sync transfer, early sync response, upload path restriction, corrupt-frame disconnect, user-scoped state parsing, shell quoting, Home service identity, all five restore states.");
  }

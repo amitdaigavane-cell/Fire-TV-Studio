@@ -23,7 +23,7 @@ android {
     }
 
     defaultConfig {
-        applicationId 'com.gathin.tvhome'
+        applicationId 'com.amitd.firetvstudio'
         minSdk 26
         targetSdk 29
         versionCode rootProject.appVersions.getProperty('tvCode').toInteger()

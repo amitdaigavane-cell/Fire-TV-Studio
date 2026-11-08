@@ -31,7 +31,7 @@ public final class StudioInstrumentation extends Instrumentation {
             mock.serial="different-tv";refused=false;try{tv.cleanup(new JSONArray().put("com.amazon.dp.logger"));}catch(Exception e){refused=true;}check(refused,"Device identity change accepted");mock.serial=serial;
         }
         // An ordinary phone-app UID must never access the launcher's shell-only provider.
-        boolean denied=false;try{getTargetContext().getContentResolver().call(android.net.Uri.parse("content://com.gathin.tvhome.studio"),"read",null,null);}catch(SecurityException e){denied=true;}check(denied,"Provider accepted ordinary app UID");
+        boolean denied=false;try{getTargetContext().getContentResolver().call(android.net.Uri.parse("content://com.amitd.firetvstudio.studio"),"read",null,null);}catch(SecurityException e){denied=true;}check(denied,"Provider accepted ordinary app UID");
         results.putString("stream","PASS: shipped UI on Android system WebView; native ADB-to-controller connect, selected cleanup, original-state ledger, protected updater partial results, app-op restore, pre-existing disable preservation, core package guard, changed-device refusal, provider access control.\n");finish(0,results);
     }catch(Throwable error){java.io.StringWriter trace=new java.io.StringWriter();error.printStackTrace(new java.io.PrintWriter(trace));results.putString("stream",trace.toString());finish(1,results);}}
     static final class MockTv implements AutoCloseable {

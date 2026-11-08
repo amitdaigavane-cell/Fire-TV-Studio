@@ -21,7 +21,7 @@
         android:theme="@style/Theme.TvHome"
         android:allowBackup="false">
 
-        <provider android:name=".StudioProvider" android:authorities="com.gathin.tvhome.studio" android:exported="true" android:permission="android.permission.DUMP" />
+        <provider android:name=".StudioProvider" android:authorities="${applicationId}.studio" android:exported="true" android:permission="android.permission.DUMP" />
 
         <receiver android:name=".BootReceiver" android:exported="true">
             <intent-filter><action android:name="android.intent.action.BOOT_COMPLETED" /><action android:name="android.intent.action.MY_PACKAGE_REPLACED" /></intent-filter>

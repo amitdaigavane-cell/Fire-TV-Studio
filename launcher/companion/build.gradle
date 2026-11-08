@@ -13,7 +13,7 @@ android {
         }
     }
 
-    defaultConfig { applicationId 'com.veyra.tvmanager'; minSdk 28; targetSdk 34; versionCode rootProject.appVersions.getProperty('phoneCode').toInteger(); versionName rootProject.appVersions.getProperty('phoneName'); testInstrumentationRunner 'com.veyra.tvmanager.StudioInstrumentation' }
+    defaultConfig { applicationId 'com.amitd.firetvstudio.phone'; minSdk 28; targetSdk 34; versionCode rootProject.appVersions.getProperty('phoneCode').toInteger(); versionName rootProject.appVersions.getProperty('phoneName'); testInstrumentationRunner 'com.veyra.tvmanager.StudioInstrumentation' }
     compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
     lint { disable 'ExpiredTargetSdkVersion' }
     sourceSets.main.java.srcDir '../common/src/main/java'

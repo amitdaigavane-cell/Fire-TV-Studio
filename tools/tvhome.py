@@ -16,8 +16,8 @@ import subprocess
 import sys
 import time
 
-PACKAGE = 'com.gathin.tvhome'
-PROVIDER = 'content://com.gathin.tvhome.studio'
+PACKAGE = 'com.amitd.firetvstudio'
+PROVIDER = 'content://com.amitd.firetvstudio.studio'
 CLEAN = json.loads((Path(__file__).resolve().parents[1] / 'launcher/common/cleanup-packages.json').read_text(encoding='utf-8'))
 
 STATES = {0: 'default-state', 1: 'enable', 2: 'disable',
