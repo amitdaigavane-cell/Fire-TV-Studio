@@ -65,7 +65,10 @@ public final class HomeSurface extends FrameLayout {
         String dock=prefs.getString("dock","com.amazon.firetv.youtube,com.netflix.ninja,com.amazon.firebat,in.startv.hotstar");
         for(String p:dock.split(","))if(!p.isEmpty())pinned.add(p);
         hidden.addAll(prefs.getStringSet("hidden_v3",new HashSet<>(Arrays.asList("com.amazon.firetv.troubleshooting"))));
-        if(cachedApps!=null)copyCatalog();
+        if(cachedApps!=null){copyCatalog();List<String> alphabetic=new ArrayList<>();for(App a:apps)alphabetic.add(a.pkg);
+            List<String> order=AppOrder.ordered(alphabetic,StudioConfig.read(getContext()).optJSONArray("appOrder"));
+            Map<String,Integer> positions=new HashMap<>();for(int i=0;i<order.size();i++)positions.put(order.get(i),i);
+            apps.sort((a,b)->Integer.compare(positions.get(a.pkg),positions.get(b.pkg)));}
         if(cachedCatalogRevision!=catalogRevision)requestCatalog();
         if(cachedApps!=null)filterPins();
     }
@@ -214,8 +217,16 @@ public final class HomeSurface extends FrameLayout {
         if(!layout.equals("compact")){labels.add(isPinned?"Remove from Favorites":"Add to Favorites");actions.add(()->{if(isPinned)pinned.remove(app.pkg);else if(pinned.size()<6)pinned.add(app.pkg);else{Toast.makeText(getContext(),"Six favorites maximum. Remove one first.",Toast.LENGTH_LONG).show();return;}saveDock();});
         int index=pinned.indexOf(app.pkg);if(index>0){labels.add("Move left");actions.add(()->{Collections.swap(pinned,index,index-1);saveDock();});}if(index>=0&&index<pinned.size()-1){labels.add("Move right");actions.add(()->{Collections.swap(pinned,index,index+1);saveDock();});}
         }
+        if(!isHidden&&(layout.equals("compact")||!isPinned)){
+            List<String> library=libraryApps();int position=library.indexOf(app.pkg);
+            if(position>0){labels.add("Move earlier in library");actions.add(()->moveLibrary(app.pkg,-1));}
+            if(position>=0&&position<library.size()-1){labels.add("Move later in library");actions.add(()->moveLibrary(app.pkg,1));}
+        }
         labels.add(isHidden?"Show on Home":"Hide from Home");actions.add(()->{if(isHidden)hidden.remove(app.pkg);else hidden.add(app.pkg);prefs.edit().putStringSet("hidden_v3",new HashSet<>(hidden)).apply();changed();});labels.add("App settings");actions.add(()->launch(new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,Uri.parse("package:"+app.pkg))));menu(app.name,labels,actions);
     }
+    private List<String> libraryApps(){List<String> result=new ArrayList<>();for(App a:apps)if(!hidden.contains(a.pkg)&&(layout.equals("compact")||!pinned.contains(a.pkg)))result.add(a.pkg);return result;}
+    private void moveLibrary(String pkg,int direction){List<String> all=new ArrayList<>();for(App a:apps)all.add(a.pkg);saveLibraryOrder(new org.json.JSONArray(AppOrder.move(all,libraryApps(),pkg,direction)));}
+    private void saveLibraryOrder(org.json.JSONArray order){try{StudioConfig.save(getContext(),StudioConfig.read(getContext()).put("appOrder",order));}catch(Exception e){Toast.makeText(getContext(),"Could not save app order",Toast.LENGTH_SHORT).show();}}
     private void idleMenu(){menu("Home idle screen",Arrays.asList("On: wallpaper at 2 min, sleep at 15 min","Off: use Fire OS idle settings"),Arrays.asList(()->setIdle(true),()->setIdle(false)));}
     private void setIdle(boolean enabled){try{StudioConfig.save(getContext(),StudioConfig.read(getContext()).put("idleScreen",enabled));}catch(Exception e){Toast.makeText(getContext(),"Could not save idle setting",Toast.LENGTH_SHORT).show();}}
     private void customize(){
@@ -223,6 +234,7 @@ public final class HomeSurface extends FrameLayout {
         List<Runnable> actions=new ArrayList<>(Arrays.asList(this::homeMenu,this::themeMenu,this::idleMenu,this::manageApps,()->{page="hidden";selected="all";build();},()->launch(new Intent(Settings.ACTION_WIFI_SETTINGS))));
         if(StudioConfig.theme(getContext()).optJSONArray("wallpapers").length()>1){names.add("Next wallpaper");actions.add(()->{String key="wallpaper_index_"+StudioConfig.theme(getContext()).optString("id");prefs.edit().putInt(key,prefs.getInt(key,0)+1).apply();setBackground(HomeWallpaper.background(getContext()));for(View dock:cinemaDocks)dock.invalidate();});}
         if(layout.equals("cinema")){names.add("Dock appearance");actions.add(this::dockMenu);}
+        names.add("Sort library alphabetically");actions.add(()->saveLibraryOrder(new org.json.JSONArray()));
         menu("Make yourself at home",names,actions);
     }
     private void manageApps(){

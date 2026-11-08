@@ -8,7 +8,6 @@ This project is **completely vibe coded with Codex**. Human direction, iteration
 | [itsmeterrylin/fire-tv-cleanup](https://github.com/itsmeterrylin/fire-tv-cleanup) | Source checkout used as the base for our launcher; substantially adapted Home UI and routing. | [Original MIT notice](../licenses/fire-tv-cleanup-MIT.txt) |
 | [udhaykumarbala/cleanyourtv-app](https://github.com/udhaykumarbala/cleanyourtv-app) | Reference for a reversible, phone-driven cleanup/install workflow. Its application code is not included in our companion. | [MIT notice retained for attribution](../licenses/cleanyourtv-app-MIT.txt) |
 | [Cameron Gutman / AdbLib](https://github.com/cgutman/AdbLib) | Reused RSA/ADB key handling under `com.cgutman.adblib`; the transport is implemented separately. | [BSD 3-Clause](../licenses/AdbLib-BSD-3-Clause.txt) |
-| [da-r-k / Idiot Box](https://github.com/da-r-k/idiot-box/releases/tag/v1.0.0) | Reviewed its v1.0.0 music/lyrics design as a possible future add-on. No playback widget, player, lyrics client or music screensaver is included in this release. | [MIT notice retained for attribution](../licenses/idiot-box-MIT.txt) |
 
 [Reference checkout revisions](reference-revisions.json) record the source snapshots consulted. Repository account names are not substituted for the copyright holders named by those licenses. Original copyright, permission and disclaimer text is preserved. No affiliation or endorsement is implied.
 

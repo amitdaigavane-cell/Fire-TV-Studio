@@ -4,6 +4,11 @@ public class ConfigTest {
  static int cases;
  static void reject(JSONObject c)throws Exception{boolean rejected=false;try{StudioConfig.validate(c);}catch(IllegalArgumentException|JSONException e){rejected=true;}if(!rejected)throw new AssertionError("Unsafe config accepted: "+c);cases++;}
  public static void main(String[] args)throws Exception{
+  if(!StudioConfig.validate(StudioConfig.defaults()).getString("liveTvApp").isEmpty())throw new AssertionError("Shortcut must default off");cases++;
+  if(!StudioConfig.validate(StudioConfig.defaults().put("liveTvApp","com.example.iptv")).getString("liveTvApp").equals("com.example.iptv"))throw new AssertionError("Shortcut lost");cases++;
+  reject(StudioConfig.defaults().put("liveTvApp","com.amazon.tv.launcher"));reject(StudioConfig.defaults().put("liveTvApp","com.gathin.tvhome"));reject(StudioConfig.defaults().put("liveTvApp","com.example; reboot"));
+  reject(StudioConfig.defaults().put("appOrder",new JSONArray().put("../../escape")));reject(StudioConfig.defaults().put("appOrder",new JSONArray().put("com.example.app").put("com.example.app")));
+  if(!StudioConfig.validate(StudioConfig.defaults().put("appOrder",new JSONArray().put("com.example.app"))).getJSONArray("appOrder").getString(0).equals("com.example.app"))throw new AssertionError("Library order lost");cases++;
   JSONObject c=StudioConfig.validate(StudioConfig.defaults());if(c.getJSONArray("themes").length()!=1||!c.getJSONObject("weather").getString("mode").equals("off"))throw new AssertionError("defaults incorrect");cases++;
   reject(StudioConfig.defaults().put("active","missing"));c=StudioConfig.defaults();c.getJSONArray("themes").getJSONObject(0).put("inputs","anything");reject(c);reject(StudioConfig.defaults().put("schema",99));
   c=StudioConfig.defaults();c.getJSONArray("themes").getJSONObject(0).put("id","../escape");reject(c);

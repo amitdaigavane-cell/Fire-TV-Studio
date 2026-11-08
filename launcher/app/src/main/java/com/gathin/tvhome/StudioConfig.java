@@ -30,6 +30,7 @@ final class StudioConfig {
         }
         return cached;
     }
+    static synchronized String liveTvApp(Context c){return snapshot(c).optString("liveTvApp","");}
     static synchronized JSONObject read(Context c){return copy(snapshot(c));}
     private static JSONObject copy(JSONObject source){
         JSONObject out=new JSONObject();try{Iterator<String> keys=source.keys();while(keys.hasNext()){String key=keys.next();out.put(key,copyValue(source.get(key)));}return out;}catch(JSONException e){throw new IllegalStateException(e);}
@@ -47,7 +48,7 @@ final class StudioConfig {
         else if("defaults".equals(choice))replacement=defaults();
         else throw new IllegalArgumentException("Choose last good settings or defaults");
         if(!prefs(c).edit().putString("studio_config_rejected",cachedRaw).putString("studio_config",replacement.toString()).putString("studio_config_last_good",replacement.toString()).putLong("ui_revision",prefs(c).getLong("ui_revision",0)+1).commit())throw new IllegalStateException("Could not recover settings");
-        cached=null;snapshot(c);WeatherInfo.invalidate();HomeRedirectService.refreshHome();
+        cached=null;snapshot(c);WeatherInfo.invalidate();HomeRedirectService.refreshLiveTvShortcut();HomeRedirectService.refreshHome();
     }
     static synchronized Set<String> cleanupReferences(Context c){snapshot(c);if(needsRecovery)return null;Set<String> keep=references(cached);if(lastGood!=null)keep.addAll(references(lastGood));return keep;}
     static Set<String> references(JSONObject config){Set<String> keep=new HashSet<>();String idle=config.optString("idleWallpaper","");if(id(idle))keep.add(idle);JSONArray themes=config.optJSONArray("themes");if(themes!=null)for(int i=0;i<themes.length();i++){JSONObject t=themes.optJSONObject(i);if(t==null)continue;JSONArray files=t.optJSONArray("wallpapers");if(files!=null)for(int j=0;j<files.length();j++){String name=files.optString(j);if(id(name))keep.add(name);}}return keep;}
@@ -69,7 +70,7 @@ final class StudioConfig {
     static synchronized JSONObject theme(Context c){return copy(active(snapshot(c)));}
     static synchronized boolean flag(Context c,String name){return active(snapshot(c)).optBoolean(name,true);}
     static synchronized String layout(Context c){return active(snapshot(c)).optString("layout","classic");}
-    static String effective(JSONObject c)throws JSONException{return new JSONObject().put("idleScreen",c.optBoolean("idleScreen",true)).put("idleWallpaper",c.optString("idleWallpaper","")).put("homeName",c.optString("homeName","HOME")).put("theme",active(c)).put("weather",c.getJSONObject("weather")).toString();}
+    static String effective(JSONObject c)throws JSONException{return new JSONObject().put("idleScreen",c.optBoolean("idleScreen",true)).put("idleWallpaper",c.optString("idleWallpaper","")).put("homeName",c.optString("homeName","HOME")).put("appOrder",c.optJSONArray("appOrder")==null?new JSONArray():c.optJSONArray("appOrder")).put("theme",active(c)).put("weather",c.getJSONObject("weather")).toString();}
     static boolean id(String s){return s!=null&&s.matches("[a-zA-Z0-9_-]{1,48}");}
     static File image(Context c,String id){if(!id(id))throw new IllegalArgumentException("Invalid image ID");File dir=new File(c.getFilesDir(),"wallpapers");dir.mkdirs();return new File(dir,id+".jpg");}
     static JSONObject validate(JSONObject source)throws JSONException{
@@ -77,6 +78,13 @@ final class StudioConfig {
         if(source.toString().length()>40000||source.optInt("schema")!=2)throw new IllegalArgumentException("Unsupported configuration");
         String homeName=source.optString("homeName","HOME").trim();if(homeName.isEmpty()||homeName.length()>24||homeName.matches("(?s).*[\\p{Cntrl}].*"))throw new IllegalArgumentException("Home name must be 1–24 characters on one line");
         JSONObject result=new JSONObject().put("schema",2).put("idleScreen",source.optBoolean("idleScreen",true)).put("homeName",homeName);
+        JSONArray order=source.optJSONArray("appOrder");if(order==null)order=new JSONArray();if(order.length()>300)throw new IllegalArgumentException("Too many ordered apps");
+        JSONArray cleanOrder=new JSONArray();Set<String> ordered=new HashSet<>();
+        for(int i=0;i<order.length();i++){String pkg=order.getString(i);if(pkg.length()>180||!pkg.matches("[a-zA-Z][a-zA-Z0-9_]*(\\.[a-zA-Z0-9_]+)+")||!ordered.add(pkg))throw new IllegalArgumentException("Invalid app order");cleanOrder.put(pkg);}
+        result.put("appOrder",cleanOrder);
+        String liveTvApp=source.optString("liveTvApp","");
+        if(!liveTvApp.isEmpty()&&(!liveTvApp.matches("[a-zA-Z][a-zA-Z0-9_]*(\\.[a-zA-Z0-9_]+)+")||liveTvApp.length()>180||liveTvApp.equals("com.gathin.tvhome")||liveTvApp.equals("com.amazon.tv.launcher")))throw new IllegalArgumentException("Choose an installed app for Live TV");
+        result.put("liveTvApp",liveTvApp);
         String idleWallpaper=source.optString("idleWallpaper","");
         if(!idleWallpaper.isEmpty()&&!id(idleWallpaper))throw new IllegalArgumentException("Invalid screensaver wallpaper");
         result.put("idleWallpaper",idleWallpaper);
@@ -100,7 +108,7 @@ final class StudioConfig {
         for(int i=0;i<clean.getJSONArray("themes").length();i++){JSONArray images=clean.getJSONArray("themes").getJSONObject(i).getJSONArray("wallpapers");for(int j=0;j<images.length();j++)if(!image(c,images.getString(j)).isFile())throw new IllegalArgumentException("Upload wallpaper before saving theme");}
         if(!prefs(c).edit().putString("studio_config",clean.toString()).putString("studio_config_last_good",clean.toString()).putLong("ui_revision",prefs(c).getLong("ui_revision",0)+(displayChanged?1:0)).commit())throw new IllegalStateException("Unable to save configuration");
         cached=null;snapshot(c);WallpaperStore.afterSave(c,references(before),references(clean));
-        if(weatherChanged)WeatherInfo.invalidate();if(displayChanged)HomeRedirectService.refreshHome();
+        HomeRedirectService.refreshLiveTvShortcut();if(weatherChanged)WeatherInfo.invalidate();if(displayChanged)HomeRedirectService.refreshHome();
     }
     static void activate(Context c,String id){try{
         if(!DESIGNS.contains(id))throw new IllegalArgumentException("Unknown design");

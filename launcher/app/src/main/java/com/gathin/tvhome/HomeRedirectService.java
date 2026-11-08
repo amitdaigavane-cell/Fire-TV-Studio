@@ -33,6 +33,8 @@ import android.widget.Toast;
  */
 public class HomeRedirectService extends AccessibilityService {
 
+    private final LiveTvKeyPolicy liveTvKeys=new LiveTvKeyPolicy();
+    private String liveTvPressTarget="";
     private static final String TAG = "HomeRedirect";
     private static final String AMAZON_LAUNCHER = "com.amazon.tv.launcher";
     private static final String AMAZON_HOME = "HomeActivity";
@@ -117,6 +119,7 @@ public class HomeRedirectService extends AccessibilityService {
     protected void onServiceConnected() {
         super.onServiceConnected();
         instance = this;connectionEpoch=SystemClock.elapsedRealtime();
+        updateLiveTvFilter();
         screenOff = !((android.os.PowerManager)getSystemService(POWER_SERVICE)).isInteractive();
         powerActions = new PowerActions(this, handler, () -> {
             if(resumedActivity!=null&&resumedActivity.isHomeResumed())showOverlay();else hideOverlay();
@@ -159,13 +162,39 @@ public class HomeRedirectService extends AccessibilityService {
         else if(interactive()){recoveryUntil=SystemClock.uptimeMillis()+6000;handler.post(recoveryCheck);}
     }
 
+    static void refreshLiveTvShortcut(){HomeRedirectService s=instance;if(s!=null)s.handler.post(s::updateLiveTvFilter);}
+    private void updateLiveTvFilter(){
+        android.accessibilityservice.AccessibilityServiceInfo info=getServiceInfo();if(info==null)return;
+        int flag=android.accessibilityservice.AccessibilityServiceInfo.FLAG_REQUEST_FILTER_KEY_EVENTS;
+        int flags=StudioConfig.liveTvApp(this).isEmpty()?info.flags&~flag:info.flags|flag;
+        if(info.flags!=flags){info.flags=flags;setServiceInfo(info);}
+    }
+    @Override protected boolean onKeyEvent(android.view.KeyEvent event){
+        if(!LiveTvKeyPolicy.supported(event.getKeyCode()))return false;
+        if(event.getAction()==android.view.KeyEvent.ACTION_DOWN&&event.getRepeatCount()>0)
+            return liveTvKeys.event(event.getKeyCode(),event.getAction(),event.getRepeatCount(),event.getDownTime(),false,false,event.isCanceled())!=LiveTvKeyPolicy.PASS;
+        String target=StudioConfig.liveTvApp(this);
+        if(event.getAction()==android.view.KeyEvent.ACTION_DOWN)liveTvPressTarget=target;
+        boolean enabled=!target.isEmpty()&&target.equals(liveTvPressTarget)&&!screenOff&&!dreaming&&isEnabled(this)&&(powerActions==null||!powerActions.pending());
+        Intent intent=null;
+        if(enabled){
+            try{
+                intent=getPackageManager().getLeanbackLaunchIntentForPackage(target);
+                if(intent==null)intent=getPackageManager().getLaunchIntentForPackage(target);
+                android.content.pm.ResolveInfo resolved=intent==null?null:getPackageManager().resolveActivity(intent,0);
+                if(resolved==null||!resolved.activityInfo.exported||(resolved.activityInfo.permission!=null&&getPackageManager().checkPermission(resolved.activityInfo.permission,getPackageName())!=android.content.pm.PackageManager.PERMISSION_GRANTED))intent=null;
+            }catch(RuntimeException ignored){intent=null;}
+        }
+        int decision=liveTvKeys.event(event.getKeyCode(),event.getAction(),event.getRepeatCount(),event.getDownTime(),enabled,intent!=null,event.isCanceled());
+        if(decision==LiveTvKeyPolicy.LAUNCH){
+            stopRecovery();handler.removeCallbacks(wakeRedirect);cancelRedirect();
+            startExternal(this,intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_NO_ANIMATION));
+        }
+        return decision!=LiveTvKeyPolicy.PASS;
+    }
+
     private void showStartupCover(){
-        startupCover=new android.widget.FrameLayout(this);
-        startupCover.setBackgroundColor(0xff080f1b);
-        android.widget.TextView title=new android.widget.TextView(this);
-        title.setText(StudioConfig.read(this).optString("homeName","HOME"));title.setTextColor(0xfff4f6fb);
-        title.setTextSize(24);title.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);title.setGravity(android.view.Gravity.CENTER);
-        startupCover.addView(title,new android.widget.FrameLayout.LayoutParams(-1,-1));
+        startupCover=new WelcomeScreen(this);
         WindowManager.LayoutParams params=new WindowManager.LayoutParams(-1,-1,WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
                 WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN|WindowManager.LayoutParams.FLAG_FULLSCREEN
                         |WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE|WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,PixelFormat.OPAQUE);

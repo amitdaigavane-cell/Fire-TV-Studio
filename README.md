@@ -2,7 +2,7 @@
 
 **Three launcher designs for your Fire TV. No root required.**
 
-**Credits:** [cleanyourtv](https://github.com/Gathin23/cleanyourtv) → [fire-tv-cleanup](https://github.com/itsmeterrylin/fire-tv-cleanup); phone workflow inspired by [cleanyourtv-app](https://github.com/udhaykumarbala/cleanyourtv-app). Additional reference reviewed: [Idiot Box](https://github.com/da-r-k/idiot-box). [Licenses and attribution](docs/CREDITS.md).
+**Credits:** [cleanyourtv](https://github.com/Gathin23/cleanyourtv) → [fire-tv-cleanup](https://github.com/itsmeterrylin/fire-tv-cleanup); phone workflow inspired by [cleanyourtv-app](https://github.com/udhaykumarbala/cleanyourtv-app). [Licenses and attribution](docs/CREDITS.md).
 
 **Completely vibe coded with Codex.** Community software, tested on a Fire TV Stick HD.
 
