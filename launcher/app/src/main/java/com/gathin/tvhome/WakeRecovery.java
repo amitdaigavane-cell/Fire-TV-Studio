@@ -2,6 +2,7 @@ package com.gathin.tvhome;
 /** Bounded wake checks act only on Home; explicit apps and Settings retain the screen. */
 final class WakeRecovery {
  static final int WAIT=0,HOME=1,STOP=2;
+ static boolean forceHomeOnWake(boolean screenOff,boolean dreamTransition){return screenOff&&!dreamTransition;}
  static int decide(String pkg,String cls,String own,boolean settingsGrace,boolean wake){
   if(pkg.equals(own))return HOME;
   if(pkg.equals("com.amazon.tv.launcher"))return cls.contains("SettingsActivity")||settingsGrace?STOP:cls.contains("HomeActivity")||wake?HOME:WAIT;

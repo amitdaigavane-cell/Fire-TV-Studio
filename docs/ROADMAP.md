@@ -17,7 +17,7 @@ The playback widget and PiP support are not included. These notes are plans, not
 
 ## Development status
 
-The 2.0 implementation is available as a prerelease for device testing. Live TV key handling and a separate welcome composition are implemented for testing. Startup cover timing/dismissal, sleep and wake policies are retained. The welcome screen uses no wallpaper decoding, network calls, timer animations or artificial delay.
+The 2.0 implementation is available as a prerelease for device testing. Live TV key handling and a separate welcome composition are implemented for testing. Startup cover timing/dismissal and normal sleep recovery are retained. System screensaver dismissal preserves the foreground app. The welcome screen uses no wallpaper decoding, network calls, timer animations or artificial delay.
 
 ## 2.0: full app-library ordering
 

@@ -73,6 +73,7 @@ public class HomeRedirectService extends AccessibilityService {
     private Runnable transitionRelease;
     private boolean screenOff;
     private boolean dreaming;
+    private boolean dreamRecovery;
     private long lastWakeAt = -2000;
     private String lastForegroundPackage="", lastForegroundClass="";
     private long recoveryUntil;
@@ -98,17 +99,20 @@ public class HomeRedirectService extends AccessibilityService {
         @Override public void onReceive(Context c, Intent i) {
             if (Intent.ACTION_SCREEN_OFF.equals(i.getAction())) {
                 screenOff = true;
-                getSharedPreferences("tvhome", MODE_PRIVATE).edit().putBoolean("resume_home", true).apply();
-                stopRecovery();handler.removeCallbacks(wakeRedirect);
+                getSharedPreferences("tvhome", MODE_PRIVATE).edit().putBoolean("resume_home", !dreaming&&!dreamRecovery).apply();
+                if(!dreamRecovery)stopRecovery();handler.removeCallbacks(wakeRedirect);
                 cancelRedirect();clearExternalLaunch();
                 // Prepare Home while the display is off, before Fire OS paints its wake screen.
-                showOverlay();overlayPassThrough(true);if(overlay!=null)overlay.setSurfaceActive(false);
+                if(!dreaming&&!dreamRecovery){showOverlay();overlayPassThrough(true);if(overlay!=null)overlay.setSurfaceActive(false);}
             } else if (Intent.ACTION_DREAMING_STARTED.equals(i.getAction())) {
                 dreaming = true;
-                stopRecovery();cancelRedirect();clearExternalLaunch();hideOverlay();
+                stopRecovery();handler.removeCallbacks(wakeRedirect);cancelRedirect();clearExternalLaunch();hideOverlay();
             } else if (Intent.ACTION_DREAMING_STOPPED.equals(i.getAction())) {
-                if (dreaming) { dreaming = false; wakeHome(); }
-            } else if (Intent.ACTION_SCREEN_ON.equals(i.getAction()) || Intent.ACTION_USER_PRESENT.equals(i.getAction()) || Intent.ACTION_USER_UNLOCKED.equals(i.getAction())) wakeHome();
+                if (dreaming) { dreaming = false; resumeAfterDream(); }
+            } else if (Intent.ACTION_SCREEN_ON.equals(i.getAction()) || Intent.ACTION_USER_PRESENT.equals(i.getAction()) || Intent.ACTION_USER_UNLOCKED.equals(i.getAction())) {
+                if(WakeRecovery.forceHomeOnWake(screenOff,dreaming||dreamRecovery))wakeHome();
+                else if(interactive())screenOff=false;
+            }
         }
     };
     private final BroadcastReceiver packageReceiver = new BroadcastReceiver() {
@@ -237,10 +241,19 @@ public class HomeRedirectService extends AccessibilityService {
     }
 
     private boolean interactive(){return ((android.os.PowerManager)getSystemService(POWER_SERVICE)).isInteractive();}
-    private void stopRecovery(){recoveryUntil=0;handler.removeCallbacks(recoveryCheck);}
+    private void stopRecovery(){recoveryUntil=0;dreamRecovery=false;handler.removeCallbacks(recoveryCheck);}
+    private void resumeAfterDream(){
+        // Dismissing a system dream is not a Home request. Let the existing task resume;
+        // only cover a confirmed Home window, never relaunch or steal focus from an app.
+        stopRecovery();handler.removeCallbacks(wakeRedirect);cancelRedirect();
+        screenOff=!interactive();dreamRecovery=true;recoverUnknownHome=false;
+        getSharedPreferences("tvhome",MODE_PRIVATE).edit().putBoolean("resume_home",false).apply();
+        recoveryUntil=SystemClock.uptimeMillis()+6000;
+        handler.postDelayed(recoveryCheck,350);
+    }
     private void wakeHome() {
         if(!interactive()||!isEnabled(this))return;
-        screenOff=false;dreaming=false;
+        screenOff=false;dreaming=false;dreamRecovery=false;
         long now=SystemClock.uptimeMillis();
         if(now-lastWakeAt<1500&&recoveryUntil>now)return;
         lastWakeAt=now;recoveryUntil=now+6000;recoverUnknownHome=true;
@@ -253,7 +266,11 @@ public class HomeRedirectService extends AccessibilityService {
         handler.removeCallbacks(recoveryCheck);handler.postDelayed(recoveryCheck,350);
     }
     private void checkWakeRecovery(){
-        long now=SystemClock.uptimeMillis();if(now>=recoveryUntil||!interactive()||!isEnabled(this)){stopRecovery();return;}
+        long now=SystemClock.uptimeMillis();if(now>=recoveryUntil||!isEnabled(this)){stopRecovery();return;}
+        if(!interactive()){
+            if(dreamRecovery)handler.postDelayed(recoveryCheck,650);else stopRecovery();
+            return;
+        }
         if(now<externalLaunchUntil||now<bypassUntil||(powerActions!=null&&powerActions.pending())){stopRecovery();return;}
         String pkg="",cls="";int layer=Integer.MIN_VALUE;android.view.accessibility.AccessibilityWindowInfo top=null;
         java.util.List<android.view.accessibility.AccessibilityWindowInfo> windows=getWindows();
@@ -267,6 +284,7 @@ public class HomeRedirectService extends AccessibilityService {
         handler.postDelayed(recoveryCheck,650);
     }
     private void earlyHomeSignal(int kind) {
+        if(dreaming||dreamRecovery)return; // Confirm the foreground task after a system dream.
         long now=SystemClock.uptimeMillis();
         // App exits and task resumes are Home returns, not physical Home key presses.
         // Preserve explicit Settings and launch bypasses for those indirect requests.
@@ -300,7 +318,9 @@ public class HomeRedirectService extends AccessibilityService {
     public void onAccessibilityEvent(AccessibilityEvent event) {
         int type=event.getEventType();
         if(type!=AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED&&type!=AccessibilityEvent.TYPE_WINDOWS_CHANGED)return;
-        boolean awake=interactive();if(!awake){screenOff=true;return;}if(screenOff)wakeHome();
+        boolean awake=interactive();if(!awake){screenOff=true;return;}
+        if(WakeRecovery.forceHomeOnWake(screenOff,dreaming||dreamRecovery))wakeHome();else screenOff=false;
+        if(dreaming)return;
         if(type==AccessibilityEvent.TYPE_WINDOWS_CHANGED){if(recoveryUntil>SystemClock.uptimeMillis()){handler.removeCallbacks(recoveryCheck);handler.postDelayed(recoveryCheck,80);}return;}
         CharSequence pkg = event.getPackageName(), cls = event.getClassName();
         if (pkg == null || cls == null) return;
@@ -317,7 +337,7 @@ public class HomeRedirectService extends AccessibilityService {
         if (getPackageName().contentEquals(pkg)) return;
         // Accessibility also reports background windows. With an opaque Home surface in front,
         // only the top application or a focused system window may take the screen away.
-        if (attached && !isForegroundWindow(event.getWindowId())) return;
+        if ((attached||dreamRecovery) && !isForegroundWindow(event.getWindowId())) return;
         lastForegroundPackage=pkg.toString();lastForegroundClass=cls.toString();
         for (String app : SETTINGS_APPS) if (app.contentEquals(pkg)) settingsSeenAt = now;
         if (AMAZON_LAUNCHER.contentEquals(pkg) && !cls.toString().contains(AMAZON_HOME)) {

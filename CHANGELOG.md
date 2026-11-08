@@ -4,6 +4,7 @@
 
 Studio 2.0 bundles TV Home 5.0. Initial distribution is a prerelease pending physical-device validation.
 
+- Preserve the foreground app when dismissing the system screensaver; confirm Home before redirecting after a dream, and ignore duplicate wake/unlock signals.
 - Add an optional Live TV / Guide app shortcut with default behavior restoration.
 - Replace the startup label with a dedicated “Welcome back” composition without adding startup delay.
 - Support custom library ordering in all layouts, separately from favorites, with an alphabetical reset.
