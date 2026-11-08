@@ -1,0 +1,313 @@
+<title>Fire TV Studio Preview</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Roboto+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a control strip over a 16:9 "TV" stage drawn at the launcher's own 960x540 dp canvas, scaled to fit; change notes below. */
+:root{
+  --room:#14161c; --panel:#1d2029; --line:#2c303c; --ink:#e9ecf3; --mute:#9aa1b2;
+  --accent:#a9ead8; --pick:#7cc4ff;
+  --tv-font:"Roboto",system-ui,sans-serif; --mono:"Roboto Mono",ui-monospace,monospace;
+  color-scheme:dark;
+}
+html,body{height:auto}
+body{background:var(--room);color:var(--ink);font:14px/1.5 var(--tv-font);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 40px}
+.wrap{max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+header h1{font-size:20px;font-weight:500;margin:0;letter-spacing:.01em}
+header p{margin:2px 0 0;color:var(--mute);font-size:13px}
+.bar{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.grp{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.grp>span{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--mute);margin-right:2px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{background:transparent;color:var(--ink);border:0;padding:6px 11px;font:500 13px var(--tv-font);cursor:pointer}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"]{background:var(--pick);color:#0b1520}
+.seg button:focus-visible,.file:focus-within{outline:2px solid var(--pick);outline-offset:2px}
+.file{border:1px dashed var(--line);border-radius:8px;padding:5px 10px;font-size:13px;cursor:pointer;color:var(--ink)}
+.file input{position:absolute;opacity:0;width:1px;height:1px}
+.hint{font-size:12px;color:var(--mute);margin-left:auto}
+kbd{font:500 11px var(--mono);border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:0 5px;color:var(--ink)}
+.stage-box{position:relative;width:100%;aspect-ratio:16/9;max-width:100%;border-radius:10px;overflow:hidden;background:#000;box-shadow:0 0 0 10px #0a0b0e,0 18px 40px rgba(0,0,0,.5);margin:10px 0 18px}
+.stage-box:focus{outline:none}
+.stage-box:focus-visible{box-shadow:0 0 0 10px #0a0b0e,0 0 0 13px var(--pick)}
+.tv{position:absolute;left:0;top:0;width:960px;height:540px;transform-origin:0 0;overflow:hidden;font-family:var(--tv-font);color:#fff;user-select:none}
+.notes{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}
+.note{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px;min-width:0}
+.note h3{margin:0 0 4px;font-size:14px;font-weight:500}
+.note p{margin:0;color:var(--mute);font-size:13px}
+.note code{font:12px var(--mono);color:var(--accent)}
+.tag{font:500 10px var(--mono);letter-spacing:.08em;color:var(--pick);text-transform:uppercase}
+
+/* ---------- TV surface (dp units = px on the 960x540 canvas) ---------- */
+.wall{position:absolute;inset:0;background-size:cover;background-position:center}
+.dim{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.18),rgba(0,0,0,.08) 40%,rgba(0,0,0,.30))}
+.home{position:absolute;inset:0;display:flex;flex-direction:column;padding:20px 36px 12px}
+.top{display:flex;align-items:center;height:38px;flex:none}
+.brand{flex:1;letter-spacing:.18em;color:var(--accent);font-size:18px}
+.ctl{height:36px;min-width:90px;padding:0 10px;margin-left:6px;display:flex;align-items:center;justify-content:center;border-radius:12px;font-size:12px;border:1px solid transparent;white-space:nowrap}
+.stg{display:flex;flex-direction:column;align-items:center;flex:none}
+.clock{font-weight:700;color:var(--accent);line-height:1}
+.date{color:rgba(255,255,255,.72)}
+.wline{color:#fff}
+.cap{align-self:center;display:flex;flex-direction:column;justify-content:flex-end}
+.greet{color:var(--accent);letter-spacing:.20em}
+.hero{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dockrow{display:flex;justify-content:center;flex:none}
+.dock{display:flex;align-items:center;gap:8px;border-radius:24px;padding:6px 16px;overflow:hidden}
+.tile{flex:none;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;padding:8px 6px 0}
+.art{width:100%;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:700;letter-spacing:.02em;transition:transform .14s ease,box-shadow .14s ease;border:2px solid transparent}
+.lbl{margin-top:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.more .art{background:transparent!important;font-size:28px;letter-spacing:.1em}
+.foot{margin-top:auto;display:flex;align-items:center;height:40px;flex:none}
+.status{flex:1;font-size:13px}
+.f{outline:none}
+.f.on .art{transform:scale(1.045);border-color:#fff;box-shadow:0 8px 22px rgba(0,0,0,.45)}
+.ctl.on{background:rgba(169,234,216,.22);border-color:var(--accent)}
+
+/* Current: accent-tinted blur, the CinemaDock "blur" style */
+.cur .dock,.cur .panel,.cur .menu{background:rgba(42,60,92,.55);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+
+/* Proposed: frosted glass with an edge and top highlight; readable text */
+.pro .home{padding:18px 40px 14px}
+.pro .dock,.pro .panel,.pro .menu,.pro .wcard{
+  background:linear-gradient(180deg,rgba(255,255,255,.16),rgba(255,255,255,.06));
+  backdrop-filter:blur(22px) saturate(150%);-webkit-backdrop-filter:blur(22px) saturate(150%);
+  border:1px solid rgba(255,255,255,.26);box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 12px 30px rgba(0,0,0,.28)}
+.pro .home *{text-shadow:0 1px 3px rgba(0,0,0,.55)}
+.pro .art{text-shadow:none!important}
+.pro .ctl.on{background:rgba(255,255,255,.18);border-color:rgba(255,255,255,.7)}
+.pro .f.on .art{transform:scale(1.06);box-shadow:0 0 0 3px rgba(255,255,255,.9),0 12px 28px rgba(0,0,0,.5);border-color:transparent}
+.wcard{display:flex;align-items:center;gap:18px;border-radius:18px;padding:8px 18px;margin-top:8px}
+.wnow{display:flex;align-items:center;gap:10px}
+.wtemp{font-size:30px;font-weight:500;line-height:1}
+.wsub{font-size:13px;color:rgba(255,255,255,.8);line-height:1.3}
+.wdays{display:flex;gap:16px;padding-left:18px;border-left:1px solid rgba(255,255,255,.25)}
+.wday{display:flex;flex-direction:column;align-items:center;font-size:12px;color:rgba(255,255,255,.85);line-height:1.25}
+.wday b{font-weight:500;color:#fff;font-size:13px}
+.ico{width:30px;height:30px;flex:none}
+.wday .ico{width:20px;height:20px;margin:2px 0}
+
+/* More apps page */
+.panel{border-radius:24px;padding:12px 16px;margin-top:6px}
+.sect{display:flex;justify-content:space-between;font-size:10px;letter-spacing:.16em;color:rgba(255,255,255,.7);height:22px;align-items:center}
+.grid{display:grid;gap:12px}
+
+/* Menus */
+.scrim{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.25)}
+.menu{width:340px;border-radius:24px;padding:20px 22px}
+.menu h4{margin:0 0 12px;font-weight:400;font-size:22px}
+.mi{height:40px;border-radius:12px;display:flex;align-items:center;padding:0 16px;margin-top:8px;font-size:15px;background:rgba(255,255,255,.08);border:1px solid transparent}
+.mi.on{border-color:#fff;background:rgba(255,255,255,.2)}
+.pro .menu{width:400px}.pro .menu h4{font-size:26px}.pro .mi{height:48px;font-size:18px}
+.credit{font-size:10px;color:rgba(255,255,255,.65);margin-top:12px}
+
+/* Idle */
+.idle{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;padding:0 64px;background:linear-gradient(90deg,rgba(0,0,0,.35),rgba(0,0,0,0) 60%)}
+.idle .day{letter-spacing:.2em;font-weight:700;font-size:13px}
+.idle .big{font-size:82px;font-weight:700;line-height:1.05}
+.idle .d2{font-size:20px;font-weight:500;margin-top:4px}
+.idle .w2{font-size:16px;font-weight:500;margin-top:12px}
+.pro .idle .big{font-size:104px}.pro .idle .d2{font-size:24px}
+@media (prefers-reduced-motion:reduce){.art{transition:none}}
+@media (max-width:640px){.hint{margin-left:0}}
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Fire TV Studio Preview</h1>
+    <p>Cinema theme on a 1080p Fire TV, drawn at the launcher's real sizes. Compare what's on your TV now with the proposed changes.</p>
+  </header>
+
+  <div class="bar" role="toolbar" aria-label="Preview options">
+    <div class="grp"><span>Version</span>
+      <div class="seg" id="ver"><button id="v-cur" data-v="cur">Current</button><button id="v-pro" data-v="pro" aria-pressed="true">Proposed</button></div></div>
+    <div class="grp"><span>Screen</span>
+      <div class="seg" id="scr"><button id="s-home" data-s="home" aria-pressed="true">Home</button><button id="s-more" data-s="more">More apps</button><button id="s-menu" data-s="menu">Customize</button><button id="s-idle" data-s="idle">Idle</button></div></div>
+    <div class="grp"><span>Dock</span>
+      <div class="seg" id="dk"><button id="d3" data-d="3">3 apps</button><button id="d6" data-d="6" aria-pressed="true">6 apps</button></div></div>
+    <div class="grp"><span>Wallpaper</span>
+      <div class="seg" id="wp"><button id="w-lake" data-w="lake" aria-pressed="true">Lake</button><button id="w-neb" data-w="neb">Nebula</button><button id="w-dusk" data-w="dusk">Pier</button></div>
+      <label class="file">Use my photo<input id="upload" type="file" accept="image/*"></label></div>
+    <div class="hint">Click the TV, then <kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd> <kbd>Enter</kbd> <kbd>Esc</kbd> = Back</div>
+  </div>
+
+  <div class="stage-box" id="box" tabindex="0" aria-label="TV preview, use arrow keys to move focus">
+    <div class="tv" id="tv"></div>
+  </div>
+
+  <div class="notes" id="notes">
+    <div class="note"><div class="tag">Fonts</div><h3>About 1.3× larger, with a soft shadow</h3><p>Clock 64 → 84, labels 14 → 17, top and bottom buttons 12 → 16, status 13 → 15. The shadow keeps text readable on busy wallpapers. Code: <code>HomeSurface.buildAlternative()</code></p></div>
+    <div class="note"><div class="tag">Dock</div><h3>Six favourites without scrolling</h3><p>Today six favourites run off the edge and the dock scrolls. Proposed tiles size themselves to fit: 148 wide with three apps, 115 with six. Pin apps under Customize → Manage apps.</p></div>
+    <div class="note"><div class="tag">Weather</div><h3>A card instead of one line</h3><p>Icon, temperature, today's high and low, and three days ahead from Open-Meteo, which the launcher already uses. Values in this preview are a sample. Code: <code>WeatherInfo</code></p></div>
+    <div class="note"><div class="tag">Glass</div><h3>Frosted panels, no blue tint</h3><p>White frost over the blurred wallpaper with a light edge and top highlight, for the dock, More apps and menus. On the TV this stays a one-time blur, so it costs nothing while scrolling. Code: <code>CinemaDock</code></p></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const S={v:"pro",s:"home",d:6,w:"lake",photo:null,focus:{g:1,i:0},menu:null,menuI:0};
+  try{const saved=JSON.parse(localStorage.getItem("fts-preview")||"{}");Object.assign(S,{v:saved.v||S.v,d:saved.d||S.d,w:saved.w||S.w});}catch(e){}
+  const save=()=>{try{localStorage.setItem("fts-preview",JSON.stringify({v:S.v,d:S.d,w:S.w}))}catch(e){}};
+
+  const FAV=[["SmartTube","#e8423a","#fff"],["Stremio","#2b2f9e","#fff"],["NetMirrorTV","#141414","#e33"],["VLC","#f08a1c","#fff"],["Downloader","#e8862d","#fff"],["X-plore","#2aa2e0","#fff"]];
+  const MORE=[["Amazon Music","#5fd0e0","#123"],["Amazon Photos","#5fc0ea","#fff"],["Downloader","#e8862d","#fff"],["Echo Nightly","#3a4560","#fff"],["IbPro Player","#eef0f4","#c22"],["News","#f06a3a","#fff"],["Smart STB+","#e9eef7","#1d6fd8"],["StbEmu (Pro)","#2f8de0","#fff"],["VLC","#f08a1c","#fff"],["X-plore","#2aa2e0","#fff"]];
+  const MENU=["Home screen","Themes","Home idle screen","Manage apps","Hidden apps","Network settings","Next wallpaper"];
+  const POWER=["Sleep","Restart"];
+
+  const WALL={
+    lake:`radial-gradient(60% 40% at 62% 38%,rgba(255,255,255,.55),rgba(140,170,255,0) 60%),url("data:image/svg+xml;utf8,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" preserveAspectRatio="none"><path d="M0 330 L120 300 L210 315 L300 290 L420 318 L520 300 L640 325 L760 296 L880 312 L960 300 L960 360 L0 360Z" fill="#1d3a86" opacity=".85"/><rect y="360" width="960" height="180" fill="#2a56c9" opacity=".55"/></svg>')}") center/cover no-repeat,linear-gradient(180deg,#1530a8 0%,#2f5be0 55%,#2a50c0 70%,#1a3a9a 100%)`,
+    neb:"radial-gradient(30% 40% at 20% 40%,#d84a8a 0%,rgba(216,74,138,0) 70%),radial-gradient(35% 45% at 70% 55%,#f2b13c 0%,rgba(242,177,60,0) 70%),radial-gradient(40% 50% at 45% 30%,#7a48e8 0%,rgba(122,72,232,0) 70%),radial-gradient(50% 60% at 85% 20%,#2f7fe8 0%,rgba(47,127,232,0) 70%),#140c34",
+    dusk:`url("data:image/svg+xml;utf8,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" preserveAspectRatio="none"><path d="M0 250 L180 240 L320 280 L520 300 L700 310 L960 300 L960 330 L0 330Z" fill="#2a3a78"/><rect y="330" width="960" height="210" fill="#3d5aa8"/><rect x="230" y="318" width="420" height="10" fill="#1d2440"/><g fill="#1d2440"><rect x="250" y="328" width="8" height="70"/><rect x="330" y="328" width="8" height="60"/><rect x="410" y="328" width="8" height="52"/><rect x="490" y="328" width="8" height="44"/><rect x="570" y="328" width="8" height="38"/></g><path d="M620 300 L660 285 L700 300Z" fill="#1d2440"/></svg>')}") center/cover no-repeat,linear-gradient(180deg,#5d77d8 0%,#8aa0ea 45%,#6c86d6 60%,#3d5aa8 100%)`
+  };
+
+  const sun=`<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.6"><circle cx="12" cy="12" r="4.2" fill="#ffd36a" stroke="#ffd36a"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6" stroke="#ffd36a"/></svg>`;
+  const cloud=`<svg class="ico" viewBox="0 0 24 24"><path d="M7 18h10.5a3.5 3.5 0 0 0 .4-7A5.5 5.5 0 0 0 7.3 9.6 4.2 4.2 0 0 0 7 18z" fill="#e8eef8"/></svg>`;
+  const snow=`<svg class="ico" viewBox="0 0 24 24"><path d="M7 14h10.5a3.2 3.2 0 0 0 .4-6.4A5 5 0 0 0 7.3 6.4 3.8 3.8 0 0 0 7 14z" fill="#e8eef8"/><g fill="#bfe0ff"><circle cx="8" cy="18" r="1.2"/><circle cx="12" cy="20" r="1.2"/><circle cx="16" cy="18" r="1.2"/></g></svg>`;
+  const pcloud=`<svg class="ico" viewBox="0 0 24 24"><circle cx="9" cy="9" r="3.6" fill="#ffd36a"/><path d="M9 19h9a3 3 0 0 0 .3-6A4.6 4.6 0 0 0 9.4 12 3.5 3.5 0 0 0 9 19z" fill="#e8eef8"/></svg>`;
+
+  const tv=document.getElementById("tv"),box=document.getElementById("box");
+  const now=()=>new Date();
+  const hhmm=d=>String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");
+  const dateLong=d=>d.toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long"});
+  const greet=()=>{const h=now().getHours();return h<12?"GOOD MORNING":h<17?"GOOD AFTERNOON":"GOOD EVENING"};
+
+  // Sizes: current = values from HomeSurface.java; proposed = about 1.3x
+  const Z={cur:{brand:18,ctl:12,ctlW:90,clock:64,clockH:80,date:15,w:15,greet:12,hero:26,tileW:136,art:84,lbl:14,status:13,foot:12,more:13,moreArt:78,cols:5},
+           pro:{brand:22,ctl:16,ctlW:104,clock:84,clockH:92,date:19,w:17,greet:14,hero:30,tileW:148,art:92,lbl:17,status:15,foot:16,more:16,moreArt:86,cols:5}};
+
+  let groups=[];
+  function tile(a,z,cls,idx,g){return `<div class="tile f ${cls||""}" data-g="${g}" data-i="${idx}" style="width:${z.tileW}px"><div class="art" style="height:${z.art}px;background:${a[1]};color:${a[2]};font-size:${Math.round(z.lbl*1.15)}px">${a[0].split(" ")[0]}</div><div class="lbl" style="font-size:${z.lbl}px">${a[0]}</div></div>`}
+
+  function weather(z){
+    if(S.v==="cur")return `<div class="wline" style="font-size:${z.w}px;height:28px;display:flex;align-items:center">Regina · -1°C · Cloudy</div>`;
+    return `<div class="wcard"><div class="wnow">${cloud}<div class="wtemp">-1°</div><div class="wsub">Cloudy<br>H 2° · L -7°</div></div>
+      <div class="wdays"><div class="wday"><b>Mon</b>${pcloud}3° / -5°</div><div class="wday"><b>Tue</b>${snow}-2° / -9°</div><div class="wday"><b>Wed</b>${sun}1° / -8°</div></div></div>`;
+  }
+
+  function topBar(z){
+    return `<div class="top"><div class="brand" style="font-size:${z.brand}px">HOME</div>
+      ${["Cast","Customize","Settings"].map((t,i)=>`<div class="ctl f" data-g="0" data-i="${i}" style="font-size:${z.ctl}px;min-width:${z.ctlW}px">${t}</div>`).join("")}</div>`;
+  }
+  function footBar(z,g){
+    return `<div class="foot"><div class="status" style="font-size:${z.status}px">Connected · 1.1 GB free</div>
+      ${["Inputs","Power"].map((t,i)=>`<div class="ctl f" data-g="${g}" data-i="${i}" style="font-size:${z.foot}px;min-width:${S.v==="pro"?96:80}px">${t}</div>`).join("")}</div>`;
+  }
+
+  function render(){
+    const z=Z[S.v];
+    const wall=S.photo?`url("${S.photo}") center/cover no-repeat`:WALL[S.w];
+    let html=`<div class="wall" id="wall"></div><div class="dim"></div><div class="${S.v}" style="position:absolute;inset:0">`;
+    if(S.s==="idle"){
+      html+=`<div class="idle"><div class="day">${now().toLocaleDateString("en-GB",{weekday:"long"}).toUpperCase()}</div><div class="big">${hhmm(now())}</div>
+        <div class="d2">${now().toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"})}</div>
+        ${S.v==="pro"?`<div class="w2" style="display:flex;align-items:center;gap:10px">${cloud} Regina · -1°C · Cloudy · H 2° L -7°</div>`:`<div class="w2">Regina · -1°C · Cloudy</div>`}</div>`;
+      groups=[];
+    }else if(S.s==="more"){
+      const cols=z.cols;
+      html+=`<div class="home">${topBar(z)}
+        <div class="stg" style="height:${S.v==="pro"?118:120}px;justify-content:center"><div class="wline" style="font-size:${z.w}px">Regina · -1°C · Cloudy</div>
+        <div class="hero" style="font-size:${z.hero}px;margin-top:10px" id="hero">All your apps, one place.</div></div>
+        <div class="panel"><div class="sect" style="${S.v==="pro"?"font-size:12px":""}"><span>MORE APPS</span><span>${MORE.length} apps</span></div>
+        <div class="grid" style="grid-template-columns:repeat(${cols},1fr)">${MORE.map((a,i)=>`<div class="tile f" data-g="${1+Math.floor(i/cols)}" data-i="${i%cols}" style="padding:6px 6px 0"><div class="art" style="height:${z.moreArt}px;background:${a[1]};color:${a[2]};font-size:${z.more+2}px">${a[0].split(" ")[0]}</div><div class="lbl" style="font-size:${z.more}px">${a[0]}</div></div>`).join("")}</div></div>
+        ${footBar(z,1+Math.ceil(MORE.length/cols))}</div>`;
+    }else{
+      const fav=FAV.slice(0,S.d);
+      const pro=S.v==="pro";
+      const room=888-32-fav.length*8;
+      const zz=Object.assign({},z);
+      if(pro){zz.tileW=Math.min(z.tileW,Math.floor(room/(fav.length+1)));zz.art=Math.min(z.art,Math.round(zz.tileW*.7));zz.lbl=zz.tileW<130?16:z.lbl;}
+      const dockW=Math.min(888,(fav.length+1)*zz.tileW+fav.length*8+32);
+      html+=`<div class="home">${topBar(z)}
+        <div class="stg" style="padding-top:${pro?4:18}px;height:${pro?196:166}px">
+          <div class="clock" style="font-size:${z.clock}px;height:${z.clockH}px;display:flex;align-items:center">${hhmm(now())}</div>
+          <div class="date" style="font-size:${z.date}px;height:26px">${dateLong(now())}</div>
+          ${weather(z)}</div>
+        <div class="cap" style="width:${dockW}px;padding:0 22px;height:${pro?54:60}px">
+          <div class="greet" id="greet" style="font-size:${z.greet}px;height:22px">${greet()}</div>
+          <div class="hero" id="hero" style="font-size:${z.hero}px">What would you like to watch?</div></div>
+        <div class="dockrow" style="margin-top:${pro?0:8}px"><div class="dock" style="width:${dockW}px;height:${pro?168:152}px">
+          ${fav.map((a,i)=>tile(a,zz,"",i,1)).join("")}
+          <div class="tile f more" data-g="1" data-i="${fav.length}" style="width:${zz.tileW}px"><div class="art" style="height:${zz.art}px;color:#fff">•••</div><div class="lbl" style="font-size:${zz.lbl}px">More apps</div></div>
+        </div></div>
+        ${footBar(z,2)}</div>`;
+    }
+    if(S.menu){
+      const items=S.menu==="power"?POWER:MENU;
+      html+=`<div class="scrim"><div class="menu"><h4>${S.menu==="power"?"Power":"Make yourself at home"}</h4>${items.map((t,i)=>`<div class="mi ${i===S.menuI?"on":""}">${t}</div>`).join("")}
+        ${S.menu==="power"?"":`<div class="credit">Wallpapers and theme options: TV Home Studio on your phone.<br>Weather: Open-Meteo (CC BY 4.0)</div>`}</div></div>`;
+    }
+    html+=`</div>`;
+    tv.innerHTML=html;
+    tv.querySelector("#wall").style.background=wall;
+    groups=[];tv.querySelectorAll(".f").forEach(el=>{const g=+el.dataset.g,i=+el.dataset.i;(groups[g]=groups[g]||[])[i]=el;});
+    groups=groups.filter(Boolean);
+    paintFocus();
+  }
+
+  function paintFocus(){
+    tv.querySelectorAll(".f.on").forEach(e=>e.classList.remove("on"));
+    if(!groups.length||S.menu)return;
+    S.focus.g=Math.max(0,Math.min(groups.length-1,S.focus.g));
+    const row=groups[S.focus.g];S.focus.i=Math.max(0,Math.min(row.length-1,S.focus.i));
+    const el=row[S.focus.i];el.classList.add("on");
+    const hero=tv.querySelector("#hero"),gr=tv.querySelector("#greet");
+    if(S.s==="home"&&hero){
+      if(el.classList.contains("tile")){hero.textContent=el.querySelector(".lbl").textContent;if(gr)gr.style.visibility="hidden";}
+      else{hero.textContent="What would you like to watch?";if(gr)gr.style.visibility="visible";}
+    }
+  }
+
+  function setScreen(s){S.s=s;S.menu=s==="menu"?"customize":null;S.menuI=0;if(s==="menu")S.s="home";S.focus={g:s==="more"?1:1,i:0};sync();render();}
+  function sync(){
+    document.querySelectorAll("#ver button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.v===S.v));
+    document.querySelectorAll("#scr button").forEach(b=>b.setAttribute("aria-pressed",(S.menu==="customize"?"menu":S.s)===b.dataset.s));
+    document.querySelectorAll("#dk button").forEach(b=>b.setAttribute("aria-pressed",+b.dataset.d===S.d));
+    document.querySelectorAll("#wp button").forEach(b=>b.setAttribute("aria-pressed",!S.photo&&b.dataset.w===S.w));
+  }
+
+  function activate(){
+    const el=groups[S.focus.g]&&groups[S.focus.g][S.focus.i];if(!el)return;
+    const t=el.textContent.trim();
+    if(el.classList.contains("more")){S.s="more";S.focus={g:1,i:0};}
+    else if(t==="Customize"){S.menu="customize";S.menuI=0;}
+    else if(t==="Power"){S.menu="power";S.menuI=0;}
+    sync();render();
+  }
+
+  box.addEventListener("keydown",e=>{
+    const k=e.key;
+    if(!["ArrowUp","ArrowDown","ArrowLeft","ArrowRight","Enter","Escape","Backspace"].includes(k))return;
+    e.preventDefault();
+    if(S.s==="idle"){S.s="home";sync();render();return;}
+    if(S.menu){
+      const n=(S.menu==="power"?POWER:MENU).length;
+      if(k==="ArrowDown")S.menuI=Math.min(n-1,S.menuI+1);
+      else if(k==="ArrowUp")S.menuI=Math.max(0,S.menuI-1);
+      else if(k==="Escape"||k==="Backspace"||k==="Enter")S.menu=null;
+      sync();render();return;
+    }
+    if(k==="Escape"||k==="Backspace"){if(S.s==="more"){S.s="home";S.focus={g:1,i:S.d};sync();render();}return;}
+    if(k==="Enter"){activate();return;}
+    const f=S.focus,row=groups[f.g];
+    if(k==="ArrowLeft")f.i=Math.max(0,f.i-1);
+    if(k==="ArrowRight")f.i=Math.min(row.length-1,f.i+1);
+    if(k==="ArrowUp"||k==="ArrowDown"){
+      const ng=Math.max(0,Math.min(groups.length-1,f.g+(k==="ArrowUp"?-1:1)));
+      if(ng!==f.g){const ratio=row.length>1?f.i/(row.length-1):0;f.g=ng;f.i=Math.round(ratio*(groups[ng].length-1));}
+    }
+    paintFocus();
+  });
+  tv.addEventListener("click",e=>{const el=e.target.closest(".f");box.focus();if(!el||S.menu)return;S.focus={g:groups.findIndex(r=>r.includes(el)),i:+el.dataset.i};paintFocus();activate();});
+
+  document.getElementById("ver").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;S.v=b.dataset.v;save();sync();render();});
+  document.getElementById("scr").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;setScreen(b.dataset.s);});
+  document.getElementById("dk").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;S.d=+b.dataset.d;save();sync();render();});
+  document.getElementById("wp").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;S.w=b.dataset.w;S.photo=null;save();sync();render();});
+  document.getElementById("upload").addEventListener("change",e=>{const f=e.target.files&&e.target.files[0];if(!f)return;if(S.photo)URL.revokeObjectURL(S.photo);S.photo=URL.createObjectURL(f);sync();render();});
+
+  function fit(){const s=box.clientWidth/960;tv.style.transform=`scale(${s})`;}
+  new ResizeObserver(fit).observe(box);fit();
+  setInterval(()=>{if(!S.menu)render();},30000);
+  sync();render();
+})();
+</script>
