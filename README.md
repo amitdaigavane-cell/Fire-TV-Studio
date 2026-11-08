@@ -6,16 +6,18 @@
 
 **Completely vibe coded with Codex.** Community software, tested on a Fire TV Stick HD.
 
-**Latest release: Studio 1.9.1 with TV Home 4.9.** GitHub Actions development artifacts are separate from the release downloads below.
+**[Latest stable release](https://github.com/sreeego/tv-home-studio/releases/latest)** · **[Version 2.0 downloads and release status](https://github.com/sreeego/tv-home-studio/releases/tag/v2.0.0)**
+
+Version 2.0 is initially offered for testing. Check the release badge for its current status. GitHub Actions development artifacts are separate from release downloads.
 
 ## Choose how to install
 
 | I want to use… | Download | What it does |
 | --- | --- | --- |
-| **My Android phone** — easiest | **[Phone app](https://github.com/sreeego/tv-home-studio/releases/download/v1.9.1/TV-Home-Studio-Phone-1.9.1.apk)** | Installs the launcher on your Fire TV and lets you customize it from your phone. |
-| **My computer** | **[TV launcher](https://github.com/sreeego/tv-home-studio/releases/download/v1.9.0/TV-Home-Launcher-4.9.apk)** | The launcher APK to install directly on Fire TV using ADB. |
+| **My Android phone** — easiest | **[Phone app](https://github.com/sreeego/tv-home-studio/releases/latest)** | Installs the launcher on your Fire TV and lets you customize it from your phone. |
+| **My computer** | **[TV launcher](https://github.com/sreeego/tv-home-studio/releases/latest)** | The launcher APK to install directly on Fire TV using ADB. |
 
-**Pick one method. The phone app already includes the TV launcher.**
+**Pick one method. The phone app already includes the TV launcher.** Select the PHONE or TV asset on the release page. For 2.0 testing, use the version-specific link above.
 
 ### Using a phone
 

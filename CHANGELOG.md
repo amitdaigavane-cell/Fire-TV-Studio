@@ -1,5 +1,17 @@
 # Changelog
 
+## 2.0.0 — 8 November 2026
+
+Studio 2.0 bundles TV Home 5.0. Initial distribution is a prerelease pending physical-device validation.
+
+- Add an optional Live TV / Guide app shortcut with default behavior restoration.
+- Replace the startup label with a dedicated “Welcome back” composition without adding startup delay.
+- Support custom library ordering in all layouts, separately from favorites, with an alphabetical reset.
+- Add per-design wallpaper dimming, cached wallpaper-derived accents, manual colors and focus appearance options.
+- Add a six-app recent list using existing foreground events, with clearing and opt-out controls.
+- Remove the unused Idiot Box reference from attribution and bundled notices.
+
+
 ## 1.9.1 — 8 November 2026
 
 - Fix phone connection failing with “TV did not confirm the command result” ([#5](https://github.com/sreeego/tv-home-studio/issues/5)). The package-state batch already ended in a semicolon; appending another semicolon produced invalid shell syntax. Separate the exit-status marker with a newline instead.

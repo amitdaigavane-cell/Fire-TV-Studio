@@ -1,3 +1,11 @@
+# Validation — Studio 2.0 / TV Home 5.0
+
+8 November 2026. Prerelease validation: release builds and Android Lint, six Python tests, fifteen Java suites, and mocked phone UI tests. Coverage includes Live TV key handling, app ordering, appearance settings/reset, accent extraction and bounded recent history. Signed APKs retain the distribution certificate and the embedded TV APK matches the standalone file.
+
+No physical-device validation of 2.0 is claimed. Live TV interception, welcome rendering, recent-app navigation and the new appearance options require TV testing before stable promotion. Sleep/wake policy and startup-cover lifecycle are preserved; visual content and the optional key handler are changed.
+
+---
+
 # Validation — Studio 1.9 / TV Home 4.9
 
 7 November 2026. Physical checks use the AFTSS Fire TV Stick HD, Fire OS 7.7.1.7 / Android 9 / ARMv7. Checks establish bounded behavior on this device, not universal compatibility.
