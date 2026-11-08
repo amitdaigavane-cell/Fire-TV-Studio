@@ -2,15 +2,13 @@
 
 ## 2.0.0 — 8 November 2026
 
-Studio 2.0 bundles TV Home 5.0. Initial distribution is a prerelease pending physical-device validation.
+Studio 2.0 bundles TV Home 5.0. Stable release.
 
 - Preserve the foreground app when dismissing the system screensaver; confirm Home before redirecting after a dream, and ignore duplicate wake/unlock signals.
-- Add an optional Live TV / Guide app shortcut with default behavior restoration.
 - Replace the startup label with a dedicated “Welcome back” composition without adding startup delay.
 - Support custom library ordering in all layouts, separately from favorites, with an alphabetical reset.
-- Add per-design wallpaper dimming, cached wallpaper-derived accents, manual colors and focus appearance options.
+- Add per-design wallpaper dimming, manual accent colors across focus states, controls, clocks and surfaces and focus appearance options.
 - Add a six-app recent list using existing foreground events, with clearing and opt-out controls.
-- Remove the unused Idiot Box reference from attribution and bundled notices.
 
 
 ## 1.9.1 — 8 November 2026

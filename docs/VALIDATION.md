@@ -1,3 +1,7 @@
+# Stable 2.0 revision
+
+Phone build 15 / TV build 22: removed Live TV remapping and wallpaper-derived accents. Manual colors apply to launcher surfaces, controls, focus and clocks. Existing preview configurations migrate without enabling removed features. Both release builds and Android Lint pass; six Python tests, fourteen Java suites and mocked phone UI checks pass. Final visual color changes have not been physically tested by the developer.
+
 # Validation — Studio 2.0 / TV Home 5.0
 
 8 November 2026. Prerelease validation: release builds and Android Lint, six Python tests, fifteen Java suites, and mocked phone UI tests. Coverage includes Live TV key handling, app ordering, appearance settings/reset, accent extraction and bounded recent history. Signed APKs retain the distribution certificate and the embedded TV APK matches the standalone file.

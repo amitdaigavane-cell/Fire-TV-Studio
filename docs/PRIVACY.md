@@ -16,4 +16,4 @@ Public APKs are sideloaded, with source and checksums supplied. Version 1.9 uses
 
 ## Version 2.0
 
-Recent apps keeps at most six package IDs in private TV preferences, using already-observed foreground-window events. This history is not uploaded. Clear it in the TV tray, or disable remembering recent apps in phone Apps to clear and stop it. Wallpaper accent extraction runs locally on a tiny sample; only the derived color is cached. The optional Live TV shortcut requests accessibility key filtering while configured, ignores other keys and does not record keystrokes.
+Recent apps keeps at most six package IDs in private TV preferences, using already-observed foreground-window events. This history is not uploaded. Clear it in the TV tray, or disable remembering recent apps in phone Apps to clear and stop it.

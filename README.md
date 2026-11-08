@@ -8,7 +8,7 @@
 
 **[Latest stable release](https://github.com/sreeego/tv-home-studio/releases/latest)** · **[Version 2.0 downloads and release status](https://github.com/sreeego/tv-home-studio/releases/tag/v2.0.0)**
 
-Version 2.0 is initially offered for testing. Check the release badge for its current status. GitHub Actions development artifacts are separate from release downloads.
+Version 2.0 is the current stable release. GitHub Actions development artifacts are separate from release downloads.
 
 ## Choose how to install
 

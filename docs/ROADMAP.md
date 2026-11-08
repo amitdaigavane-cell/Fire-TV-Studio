@@ -33,3 +33,6 @@ Local checks (8 November 2026): both debug APKs build and lint; six Python tests
 - Six recent apps, based on existing foreground-window events. No extra monitoring service or polling. Back then Menu from neutral Home opens the tray; Customize also contains Recent apps. Hidden/uninstalled apps are omitted. Disable and clear history from phone Apps or clear from the TV tray.
 
 Additional-feature checks: debug builds/lint, six Python tests, fifteen Java suites and mocked phone UI checks pass. Dimming, accent modes, focus modes/reset and recent-history opt-out are covered. Physical TV visual/navigation checks remain pending.
+
+
+Stable 2.0 scope: Live TV remapping and wallpaper-derived accents were removed following preview testing. Manual accents remain. Earlier implementation notes above describe the experimental build.

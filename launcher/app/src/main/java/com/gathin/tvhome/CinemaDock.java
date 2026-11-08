@@ -43,8 +43,8 @@ final class CinemaDock extends Drawable {
         int save=canvas.save();canvas.clipPath(clip);
         if(style.equals("blur")){
             prepare();if(blurred!=null){home.getLocationOnScreen(homePosition);dock.getLocationOnScreen(dockPosition);float x=homePosition[0]-dockPosition[0],y=homePosition[1]-dockPosition[1];destination.set(x,y,x+width,y+height);canvas.drawBitmap(blurred,null,destination,paint);}
-            canvas.drawColor(0x88101929);
-        }else canvas.drawColor(style.equals("light")?0xee596779:0xe6161c2a);
+            canvas.drawColor(((HomeSurface)home).accentShade(0x88,.12f));
+        }else canvas.drawColor(style.equals("light")?((HomeSurface)home).accentShade(0xee,.45f):((HomeSurface)home).accentShade(0xe6,.12f));
         canvas.restoreToCount(save);
     }
     @Override public void setAlpha(int alpha){paint.setAlpha(alpha);invalidateSelf();}
