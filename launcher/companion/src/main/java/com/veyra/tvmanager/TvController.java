@@ -31,9 +31,14 @@ final class TvController implements Closeable {
     static String quote(String value){return "'"+value.replace("'","'\\''")+"'";}
     static void packageName(String value){if(!value.matches("[a-zA-Z][a-zA-Z0-9_.]{1,180}"))throw new IllegalArgumentException("Invalid package name");}
     private static String base64(String value){return Base64.encodeToString(value.getBytes(StandardCharsets.UTF_8),Base64.URL_SAFE|Base64.NO_WRAP);}
+    static String commandWithResult(String cmd){
+        // A batch may already end in ';'. A newline separates the result marker
+        // without producing the invalid '; ;' sequence that broke 1.9 connect.
+        return cmd+"\nprintf '\\n__TVSTUDIO_RC:%s\\n' $?";
+    }
     private String command(String cmd)throws Exception{
         if(adb==null||!adb.isOpen())throw new IOException("Connect to your TV first");
-        String result=adb.shell(cmd+"; printf '\\n__TVSTUDIO_RC:%s\\n' $?");int index=result.lastIndexOf("__TVSTUDIO_RC:");if(index<0)throw new IOException("TV did not confirm the command result");String code=result.substring(index+14).trim();String output=result.substring(0,index).trim();if(!code.equals("0"))throw new IOException(output.isEmpty()?"Command refused ("+code+")":output);return output;
+        String result=adb.shell(commandWithResult(cmd));int index=result.lastIndexOf("__TVSTUDIO_RC:");if(index<0)throw new IOException("TV did not confirm the command result");String code=result.substring(index+14).trim();String output=result.substring(0,index).trim();if(!code.equals("0"))throw new IOException(output.isEmpty()?"Command refused ("+code+")":output);return output;
     }
     JSONObject connect(String host,int port)throws Exception{
         close();if(!host.matches("(?:[0-9]{1,3}\\.){3}[0-9]{1,3}"))throw new IllegalArgumentException("Enter the TV IPv4 address");for(String part:host.split("\\."))if(Integer.parseInt(part)>255)throw new IllegalArgumentException("Invalid IP address");if(port<1||port>65535)throw new IllegalArgumentException("Invalid port");
@@ -62,11 +67,14 @@ final class TvController implements Closeable {
     private Map<String,Integer> packageStates()throws Exception{
         LinkedHashSet<String> wanted=new LinkedHashSet<>(CLEAN.keySet());wanted.addAll(Arrays.asList(UPDATES));wanted.retainAll(packages);
         Map<String,Integer> result=new HashMap<>();if(wanted.isEmpty())return result;
-        StringBuilder script=new StringBuilder();
-        for(String pkg:wanted){packageName(pkg);script.append("printf '\n__TVSTUDIO_PACKAGE:").append(pkg).append("\n'; dumpsys package ").append(quote(pkg)).append(" | sed -n '/User 0:/p'; ");}
-        String output=command(script.toString());
+        String output=command(packageStateCommand(wanted));
         for(String part:output.split("__TVSTUDIO_PACKAGE:")){int newline=part.indexOf('\n');if(newline<0)continue;String pkg=part.substring(0,newline).trim();if(wanted.contains(pkg))result.put(pkg,parseState(part.substring(newline+1)));}
         if(result.size()!=wanted.size())throw new IOException("Could not read app states; reconnect and retry");return result;
+    }
+    static String packageStateCommand(Collection<String> wanted){
+        StringBuilder script=new StringBuilder();
+        for(String pkg:wanted){packageName(pkg);script.append("printf '\n__TVSTUDIO_PACKAGE:").append(pkg).append("\n'; dumpsys package ").append(quote(pkg)).append(" | sed -n '/User 0:/p'; ");}
+        return script.toString();
     }
     private static boolean stoppable(String pkg){return !pkg.equals(HOME)&&!pkg.equals("android")&&!pkg.startsWith("com.android.")&&!pkg.contains("settings")&&!pkg.contains("systemui")&&!pkg.contains("launcher")&&!pkg.contains("inputmethod")&&!pkg.contains("remote")&&!pkg.contains("permissioncontroller");}
     private Map<String,String> manageableApps()throws Exception{

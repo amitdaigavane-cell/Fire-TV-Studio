@@ -6,11 +6,11 @@ See the [compatibility matrix](COMPATIBILITY.md). ARMv7 works on the tested AFTS
 
 Use an **Android-based Fire TV**, not Vega OS. Put your phone/computer and TV on the same trusted network. Enable **Settings → My Fire TV → Developer options → ADB debugging**. If Developer options is hidden, open About and select the device name seven times. Find the TV's IP under About → Network. Accept only the authorization prompt from your own phone/computer.
 
-Downloads: [v1.9.0 release](https://github.com/sreeego/tv-home-studio/releases/tag/v1.9.0). The release includes SHA256SUMS.txt. The phone APK and TV APK are different applications.
+Downloads: [v1.9.1 release](https://github.com/sreeego/tv-home-studio/releases/tag/v1.9.1). The release includes SHA256SUMS.txt. The phone APK and TV APK are different applications.
 
 ## With an Android phone
 
-1. Install **TV-Home-Studio-Phone-1.9.apk** on an Android 9+ phone. Allow installation from the browser/file manager when Android requests it.
+1. Install **TV-Home-Studio-Phone-1.9.1.apk** on an Android 9+ phone. Allow installation from the browser/file manager when Android requests it.
 2. Open Studio, enter the TV's IP and port (normally 5555), connect, and accept the TV authorization prompt.
 3. Select **Install TV Home**. Studio installs its bundled TV Home 4.8 and grants the Home-switching permissions over ADB.
 4. Choose **This home**. **Default home** returns to Amazon Home.

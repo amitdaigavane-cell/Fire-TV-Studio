@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.9.1 — 8 November 2026
+
+- Fix phone connection failing with “TV did not confirm the command result” ([#5](https://github.com/sreeego/tv-home-studio/issues/5)). The package-state batch already ended in a semicolon; appending another semicolon produced invalid shell syntax. Separate the exit-status marker with a newline instead.
+- Add regression coverage executing the generated batch and checking successful and failed command results.
+- Phone-only hotfix: TV Home remains 4.9. Update the phone app in place; no TV reinstall is needed.
+
 ## 1.9.0 — 7 November 2026
 
 Studio 1.9 bundles TV Home 4.9.
