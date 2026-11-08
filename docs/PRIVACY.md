@@ -13,3 +13,7 @@ No project accounts, ads, analytics or telemetry uploads are implemented.
 - Amazon's own apps and your installed streaming apps have their own privacy practices; hiding an icon does not disable that app.
 
 Public APKs are sideloaded, with source and checksums supplied. Version 1.9 uses non-debuggable release builds signed with the maintainer's existing distribution certificate, originally used for development builds, to preserve upgrades from earlier releases. This is not a signing-key rotation. The private key is not in the repository. Independent debug builds use the builder's own key; release builds require explicit external signing configuration.
+
+## Unreleased 2.0 development
+
+Recent apps keeps at most six package IDs in private TV preferences, using already-observed foreground-window events. This history is not uploaded. Clear it in the TV tray, or disable remembering recent apps in phone Apps to clear and stop it. Wallpaper accent extraction runs locally on a tiny sample; only the derived color is cached. The optional Live TV shortcut requests accessibility key filtering while configured, ignores other keys and does not record keystrokes.

@@ -24,3 +24,12 @@ The 2.0 work is on a local development branch, not released. Live TV key handlin
 Arrange non-favorite apps in Classic/Cinema and the full Panel library from the phone or TV app menu. Share library order across designs; keep favorites independent. New apps append alphabetically. Offer an alphabetical reset.
 
 Local checks (8 November 2026): both debug APKs build and lint; six Python tests, fourteen Java suites, and the mocked phone UI tests pass. Live TV mapping still needs a physical remote test on Fire OS; the welcome composition and library navigation still need on-TV visual checks. Nothing from this branch is published or installed on the TV.
+
+## Additional selected 2.0 work
+
+- Per-design wallpaper dimming (0–100%, additional to the existing readability shade).
+- Theme-default, wallpaper-matched or manual accent colors. Match the design’s first wallpaper once, cache its color, and retain it during rotation.
+- Theme-default, subtle zoom, outline-only or instant focus appearance; the global animation switch remains respected.
+- Six recent apps, based on existing foreground-window events. No extra monitoring service or polling. Back then Menu from neutral Home opens the tray; Customize also contains Recent apps. Hidden/uninstalled apps are omitted. Disable and clear history from phone Apps or clear from the TV tray.
+
+Additional-feature checks: debug builds/lint, six Python tests, fifteen Java suites and mocked phone UI checks pass. Dimming, accent modes, focus modes/reset and recent-history opt-out are covered. Physical TV visual/navigation checks remain pending.

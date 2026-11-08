@@ -9,6 +9,10 @@ public class ConfigTest {
   reject(StudioConfig.defaults().put("liveTvApp","com.amazon.tv.launcher"));reject(StudioConfig.defaults().put("liveTvApp","com.gathin.tvhome"));reject(StudioConfig.defaults().put("liveTvApp","com.example; reboot"));
   reject(StudioConfig.defaults().put("appOrder",new JSONArray().put("../../escape")));reject(StudioConfig.defaults().put("appOrder",new JSONArray().put("com.example.app").put("com.example.app")));
   if(!StudioConfig.validate(StudioConfig.defaults().put("appOrder",new JSONArray().put("com.example.app"))).getJSONArray("appOrder").getString(0).equals("com.example.app"))throw new AssertionError("Library order lost");cases++;
+  for(String field:new String[]{"accentMode","accentColor","focusStyle"}){JSONObject invalid=StudioConfig.defaults();StudioConfig.active(invalid).put(field,"bad");reject(invalid);}
+  for(int dim:new int[]{-1,101}){JSONObject invalid=StudioConfig.defaults();StudioConfig.active(invalid).put("wallpaperDim",dim);reject(invalid);}
+  JSONObject look=StudioConfig.defaults();StudioConfig.active(look).put("wallpaperDim",65).put("accentMode","manual").put("accentColor","#12AB34").put("focusStyle","outline");look=StudioConfig.validate(look);if(StudioConfig.active(look).getInt("wallpaperDim")!=65||!StudioConfig.active(look).getString("accentColor").equals("#12AB34"))throw new AssertionError("Appearance lost");cases++;
+  if(StudioConfig.validate(StudioConfig.defaults().put("rememberRecentApps",false)).getBoolean("rememberRecentApps"))throw new AssertionError("Recent opt-out lost");cases++;
   JSONObject c=StudioConfig.validate(StudioConfig.defaults());if(c.getJSONArray("themes").length()!=1||!c.getJSONObject("weather").getString("mode").equals("off"))throw new AssertionError("defaults incorrect");cases++;
   reject(StudioConfig.defaults().put("active","missing"));c=StudioConfig.defaults();c.getJSONArray("themes").getJSONObject(0).put("inputs","anything");reject(c);reject(StudioConfig.defaults().put("schema",99));
   c=StudioConfig.defaults();c.getJSONArray("themes").getJSONObject(0).put("id","../escape");reject(c);

@@ -32,7 +32,8 @@ public final class HomeSurface extends FrameLayout {
     private boolean rebuilding;
     private boolean surfaceActive=true;
     private HomeIdle idle;
-    private String layout="classic", wallpaperKey="";
+    private String layout="classic", wallpaperKey="", focusStyle="theme";
+    private int activeAccent=ACCENT;
     private boolean animations;
     private final ArrayList<View> cinemaDocks=new ArrayList<>();
     private final ArrayList<View> sideNav=new ArrayList<>();
@@ -53,8 +54,8 @@ public final class HomeSurface extends FrameLayout {
     private TextView text(String value,float size,int color){TextView t=new TextView(getContext());t.setText(value);t.setTextSize(size);t.setTextColor(color);t.setTypeface(Typeface.create("sans-serif",Typeface.NORMAL));t.setIncludeFontPadding(false);return t;}
     private GradientDrawable shape(int color,int radius){GradientDrawable d=new GradientDrawable();d.setColor(color);d.setCornerRadius(dp(radius));return d;}
     private StateListDrawable tileBackground(){StateListDrawable s=new StateListDrawable();int radius=layout.equals("classic")?14:8;GradientDrawable f=shape(layout.equals("cinema")?0xff393247:layout.equals("compact")?0xff243c63:0xff203645,radius);f.setStroke(dp(2),accent());s.addState(new int[]{android.R.attr.state_focused},f);s.addState(new int[]{},shape(layout.equals("cinema")?0xdd242131:layout.equals("compact")?0xdd18263c:0xdd192331,radius));return s;}
-    private int accent(){return layout.equals("cinema")?0xffd7c6ff:layout.equals("compact")?0xffa8c6ff:ACCENT;}
-    private void motion(View v,boolean focus){v.animate().cancel();float scale=focus?(layout.equals("compact")?1.025f:layout.equals("cinema")?1.045f:1f):1f;float y=focus&&!layout.equals("compact")?-dp(2):0;if(animations)v.animate().scaleX(scale).scaleY(scale).translationY(y).setInterpolator(new android.view.animation.DecelerateInterpolator()).setDuration(layout.equals("cinema")?190:130).start();else{v.setScaleX(1);v.setScaleY(1);v.setTranslationY(0);}}
+    private int accent(){return activeAccent;}
+    private void motion(View v,boolean focus){v.animate().cancel();float scale=focus?(focusStyle.equals("zoom")?1.035f:layout.equals("compact")?1.025f:layout.equals("cinema")?1.045f:1f):1f;float y=focus&&!layout.equals("compact")?-dp(2):0;if(focusStyle.equals("outline")||focusStyle.equals("instant")){scale=1;y=0;}if(animations&&!focusStyle.equals("instant"))v.animate().scaleX(scale).scaleY(scale).translationY(y).setInterpolator(new android.view.animation.DecelerateInterpolator()).setDuration(layout.equals("cinema")?190:130).start();else{v.setScaleX(1);v.setScaleY(1);v.setTranslationY(0);}}
     private LinearLayout vertical(){LinearLayout l=new LinearLayout(getContext());l.setOrientation(LinearLayout.VERTICAL);return l;}
     private LinearLayout row(){LinearLayout l=new LinearLayout(getContext());l.setOrientation(LinearLayout.HORIZONTAL);l.setGravity(Gravity.CENTER_VERTICAL);l.setClipChildren(false);return l;}
     private LinearLayout.LayoutParams lp(int w,int h){return new LinearLayout.LayoutParams(w<0?w:dp(w),h<0?h:dp(h));}
@@ -107,7 +108,7 @@ public final class HomeSurface extends FrameLayout {
 
     private void build(){
         if(idle!=null)idle.stop();cinemaGreeting=null;rebuilding=true;if(weather!=null)WeatherInfo.unbind(weather);dismissMenu();removeAllViews();firstApp=null;cinemaDocks.clear();targets.clear();nav.clear();
-        layout=StudioConfig.layout(getContext());animations=StudioConfig.flag(getContext(),"animations");sideNav.clear();wallpaperKey=StudioConfig.wallpaper(getContext());setBackground(HomeWallpaper.background(getContext()));for(View dock:cinemaDocks)dock.invalidate();
+        layout=StudioConfig.layout(getContext());org.json.JSONObject appearance=StudioConfig.theme(getContext());focusStyle=appearance.optString("focusStyle","theme");String accentMode=appearance.optString("accentMode","theme");activeAccent=accentMode.equals("manual")?Color.parseColor(appearance.optString("accentColor","#A9EAD8")):accentMode.equals("wallpaper")?Color.parseColor(appearance.optString("wallpaperAccent","#A9EAD8")):layout.equals("cinema")?0xffd7c6ff:layout.equals("compact")?0xffa8c6ff:ACCENT;animations=StudioConfig.flag(getContext(),"animations");sideNav.clear();wallpaperKey=StudioConfig.wallpaper(getContext());setBackground(HomeWallpaper.background(getContext()));for(View dock:cinemaDocks)dock.invalidate();
         if(!layout.equals("classic")){buildAlternative();return;}
         scroll=new ScrollView(getContext());scroll.setFillViewport(true);scroll.setClipToPadding(false);scroll.setVerticalScrollBarEnabled(false);
         content=vertical();content.setPadding(dp(46),dp(20),dp(46),dp(10));content.setClipChildren(false);content.setClipToPadding(false);scroll.addView(content,new ScrollView.LayoutParams(-1,-2));addView(scroll,new LayoutParams(-1,-1));
@@ -121,7 +122,7 @@ public final class HomeSurface extends FrameLayout {
             .addCategory("amazon.intent.category.MAINSETTINGS")
             .setComponent(new ComponentName("com.amazon.tv.launcher","com.amazon.tv.launcher.ui.MainSettingsActivity"))),topNav),spaced(38,38,4));
         LinearLayout heading=vertical();LinearLayout.LayoutParams hp=lp(-1,layout.equals("cinema")&&page.equals("home")?166:layout.equals("compact")?86:104);hp.topMargin=dp(layout.equals("compact")?18:24);content.addView(heading,hp);
-        int hour=Calendar.getInstance().get(Calendar.HOUR_OF_DAY);TextView eyebrow=text(page.equals("home")?(hour<12?"GOOD MORNING":hour<17?"GOOD AFTERNOON":"GOOD EVENING"):page.equals("hidden")?"YOUR LIBRARY":"YOUR APPS",10,ACCENT);eyebrow.setLetterSpacing(.20f);heading.addView(eyebrow);eyebrow.setVisibility(StudioConfig.flag(getContext(),"showGreeting")?VISIBLE:GONE);
+        int hour=Calendar.getInstance().get(Calendar.HOUR_OF_DAY);TextView eyebrow=text(page.equals("home")?(hour<12?"GOOD MORNING":hour<17?"GOOD AFTERNOON":"GOOD EVENING"):page.equals("hidden")?"YOUR LIBRARY":"YOUR APPS",10,accent());eyebrow.setLetterSpacing(.20f);heading.addView(eyebrow);eyebrow.setVisibility(StudioConfig.flag(getContext(),"showGreeting")?VISIBLE:GONE);
         hero=text(page.equals("home")?"What would you like to watch?":page.equals("hidden")?"Hidden apps":"All your apps, one place.",29,WHITE);hero.setSingleLine();hero.setEllipsize(android.text.TextUtils.TruncateAt.END);LinearLayout.LayoutParams title=lp(-1,-2);title.topMargin=dp(12);heading.addView(hero,title);
         subtitle=text("Select to open",12,MUTED);subtitle.setVisibility(INVISIBLE);LinearLayout.LayoutParams sub=lp(-1,-2);sub.topMargin=dp(10);heading.addView(subtitle,sub);
         ArrayList<App> favorites=new ArrayList<>(),rest=new ArrayList<>();
@@ -143,7 +144,7 @@ public final class HomeSurface extends FrameLayout {
     private void clockAndWeather(LinearLayout parent,boolean vertical){weather=text("Weather",vertical?12:11,MUTED);weather.setMaxLines(vertical?2:1);weather.setEllipsize(android.text.TextUtils.TruncateAt.END);parent.addView(weather,lp(vertical?-1:220,vertical?34:30));TextClock clock=new TextClock(getContext());clock.setTextSize(vertical?28:20);if(vertical){clock.setTypeface(null,Typeface.BOLD);clock.setGravity(Gravity.CENTER);weather.setGravity(Gravity.CENTER);}clock.setTextColor(WHITE);clock.setFormat12Hour("h:mm a");clock.setFormat24Hour("HH:mm");clock.setVisibility(StudioConfig.flag(getContext(),"showClock")?VISIBLE:GONE);parent.addView(clock,lp(vertical?-1:-2,vertical?42:30));}
     private void headingBlock(LinearLayout parent,int size){TextView eyebrow=text(page.equals("home")?(layout.equals("cinema")?"TONIGHT, YOUR WAY":"YOUR SPACE"):"YOUR LIBRARY",10,accent());eyebrow.setLetterSpacing(.22f);eyebrow.setVisibility(StudioConfig.flag(getContext(),"showGreeting")?VISIBLE:GONE);parent.addView(eyebrow,lp(-1,22));hero=text(page.equals("home")?"What would you like to watch?":page.equals("hidden")?"Hidden apps":"All your apps, one place.",size,WHITE);hero.setMaxLines(layout.equals("cinema")?3:1);hero.setEllipsize(android.text.TextUtils.TruncateAt.END);parent.addView(hero,lp(-1,-2));subtitle=text("Select to open",12,MUTED);subtitle.setVisibility(INVISIBLE);LinearLayout.LayoutParams sub=lp(-1,24);sub.topMargin=dp(12);parent.addView(subtitle,sub);}
     private LinearLayout.LayoutParams powerCardSpacing(){LinearLayout.LayoutParams p=lp(-1,36);p.topMargin=dp(6);return p;}
-    private TextView sidebarCard(TextView b){b.setTextSize(14);b.setGravity(Gravity.CENTER_VERTICAL|Gravity.START);b.setPadding(dp(16),0,dp(12),0);StateListDrawable cards=new StateListDrawable();GradientDrawable focused=shape(0xff294664,12);focused.setStroke(dp(1),accent());cards.addState(new int[]{android.R.attr.state_focused},focused);cards.addState(new int[]{},shape(0x55304460,12));cards.setEnterFadeDuration(animations?120:0);cards.setExitFadeDuration(animations?120:0);b.setBackground(cards);View.OnFocusChangeListener delegate=b.getOnFocusChangeListener();b.setOnFocusChangeListener((v,f)->{delegate.onFocusChange(v,f);v.animate().cancel();if(animations)v.animate().translationX(f?dp(3):0).setInterpolator(new android.view.animation.DecelerateInterpolator()).setDuration(140).start();else v.setTranslationX(0);});return b;}
+    private TextView sidebarCard(TextView b){b.setTextSize(14);b.setGravity(Gravity.CENTER_VERTICAL|Gravity.START);b.setPadding(dp(16),0,dp(12),0);StateListDrawable cards=new StateListDrawable();GradientDrawable focused=shape(0xff294664,12);focused.setStroke(dp(1),accent());cards.addState(new int[]{android.R.attr.state_focused},focused);cards.addState(new int[]{},shape(0x55304460,12));cards.setEnterFadeDuration(animations&&!focusStyle.equals("instant")?120:0);cards.setExitFadeDuration(animations&&!focusStyle.equals("instant")?120:0);b.setBackground(cards);View.OnFocusChangeListener delegate=b.getOnFocusChangeListener();b.setOnFocusChangeListener((v,f)->{delegate.onFocusChange(v,f);v.animate().cancel();if(animations&&!focusStyle.equals("outline")&&!focusStyle.equals("instant"))v.animate().translationX(f?dp(3):0).setInterpolator(new android.view.animation.DecelerateInterpolator()).setDuration(140).start();else v.setTranslationX(0);});return b;}
     private void controls(LinearLayout parent,ArrayList<View> group,boolean vertical){String[] keys={"cast","customize","settings"};String[] titles={"Cast","Customize","Settings"};Runnable[] actions={()->launch(new Intent().setComponent(new ComponentName("com.amazon.cast.sink","com.amazon.cast.sink.DisplayMirroringSinkActivity"))),this::customize,()->launch(new Intent("amazon.intent.action.MAINSETTINGS").addCategory("amazon.intent.category.MAINSETTINGS").setComponent(new ComponentName("com.amazon.tv.launcher","com.amazon.tv.launcher.ui.MainSettingsActivity")))};for(int i=0;i<keys.length;i++){if(i==0&&!StudioConfig.flag(getContext(),"showCast"))continue;TextView b=utility(titles[i],keys[i],actions[i],group);if(vertical)sidebarCard(b);LinearLayout.LayoutParams params=lp(vertical?-1:90,vertical?36:36);if(vertical)params.topMargin=dp(6);else params.leftMargin=dp(6);parent.addView(b,params);}}
     private void footer(){LinearLayout footer=row();LinearLayout.LayoutParams fp=lp(-1,40);fp.topMargin=dp(8);content.addView(footer,fp);footer.addView(text(StudioConfig.flag(getContext(),"showStatus")?networkStatus()+"  ·  "+storageStatus():"",11,MUTED),new LinearLayout.LayoutParams(0,-2,1));ArrayList<View> group=new ArrayList<>();nav.add(group);if(TvInputs.visible(getContext()))footer.addView(utility("Inputs","inputs",this::inputsMenu,group),lp(80,36));if(StudioConfig.flag(getContext(),"showPower"))footer.addView(utility("Power","power",this::powerMenu,group),lp(80,36));}
     private void buildAlternative(){
@@ -235,6 +236,7 @@ public final class HomeSurface extends FrameLayout {
         if(StudioConfig.theme(getContext()).optJSONArray("wallpapers").length()>1){names.add("Next wallpaper");actions.add(()->{String key="wallpaper_index_"+StudioConfig.theme(getContext()).optString("id");prefs.edit().putInt(key,prefs.getInt(key,0)+1).apply();setBackground(HomeWallpaper.background(getContext()));for(View dock:cinemaDocks)dock.invalidate();});}
         if(layout.equals("cinema")){names.add("Dock appearance");actions.add(this::dockMenu);}
         names.add("Sort library alphabetically");actions.add(()->saveLibraryOrder(new org.json.JSONArray()));
+        names.add("Recent apps");actions.add(this::recentApps);
         menu("Make yourself at home",names,actions);
     }
     private void manageApps(){
@@ -295,6 +297,7 @@ public final class HomeSurface extends FrameLayout {
         if(idle!=null&&idle.key(e))return true;
         if(e.getKeyCode()==KeyEvent.KEYCODE_BACK){if(e.getAction()==KeyEvent.ACTION_UP)goHome();return true;}
         if(consumeInitialCenter&&e.getKeyCode()==KeyEvent.KEYCODE_DPAD_CENTER){if(e.getAction()==KeyEvent.ACTION_UP)consumeInitialCenter=false;return true;}
+        if(findFocus()==this&&e.getKeyCode()==KeyEvent.KEYCODE_MENU){if(e.getAction()==KeyEvent.ACTION_UP)recentApps();return true;}
         if(findFocus()==this){
             int key=e.getKeyCode();
             if(key==KeyEvent.KEYCODE_DPAD_UP||key==KeyEvent.KEYCODE_DPAD_DOWN||key==KeyEvent.KEYCODE_DPAD_LEFT||key==KeyEvent.KEYCODE_DPAD_RIGHT||key==KeyEvent.KEYCODE_DPAD_CENTER){
@@ -310,6 +313,16 @@ public final class HomeSurface extends FrameLayout {
             }
         }
         return super.dispatchKeyEvent(e);
+    }
+    static boolean isCatalogApp(String pkg){if(cachedApps!=null)for(App a:cachedApps)if(a.pkg.equals(pkg))return true;return false;}
+    private void recentApps(){
+        List<String> names=new ArrayList<>();List<Runnable> actions=new ArrayList<>();
+        if(StudioConfig.rememberRecentApps(getContext()))for(String pkg:RecentApps.read(getContext()))for(App a:apps)if(a.pkg.equals(pkg)&&!hidden.contains(pkg)){
+            names.add(a.name);actions.add(()->launch(new Intent(Intent.ACTION_MAIN).setComponent(a.component).addFlags(Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED)));break;
+        }
+        if(names.isEmpty()){names.add(StudioConfig.rememberRecentApps(getContext())?"No recent apps yet":"Recent apps are off");actions.add(()->{});}
+        else{names.add("Clear recent apps");actions.add(()->RecentApps.clear(getContext()));}
+        menu("Recent apps",names,actions);
     }
     private void launch(Intent intent){HomeRedirectService.launchFromSurface(this,intent);}
     private String networkStatus(){ConnectivityManager cm=(ConnectivityManager)getContext().getSystemService(Context.CONNECTIVITY_SERVICE);NetworkCapabilities cap=cm.getNetworkCapabilities(cm.getActiveNetwork());return cap==null?"Offline":cap.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)?"Connected":"No internet";}

@@ -340,6 +340,7 @@ public class HomeRedirectService extends AccessibilityService {
                     && pendingExternalPackage == null) return;
             cancelRedirect();
             yieldToOtherScreen = true;
+            RecentApps.record(this,pkg.toString());
             // The selected app has actually opened. Allow the very next Home press immediately.
             // Android system dialogs also need input focus; never leave the overlay over them.
             if (!AMAZON_LAUNCHER.contentEquals(pkg)) clearExternalLaunch();

@@ -30,6 +30,7 @@ final class StudioConfig {
         }
         return cached;
     }
+    static synchronized boolean rememberRecentApps(Context c){return snapshot(c).optBoolean("rememberRecentApps",true);}
     static synchronized String liveTvApp(Context c){return snapshot(c).optString("liveTvApp","");}
     static synchronized JSONObject read(Context c){return copy(snapshot(c));}
     private static JSONObject copy(JSONObject source){
@@ -56,7 +57,7 @@ final class StudioConfig {
     static final List<String> FLAGS=Arrays.asList("showClock","showCast","showGreeting","showStatus","showWeather","showPower","animations");
     static JSONObject preset(String id)throws JSONException {
         if(!DESIGNS.contains(id))throw new IllegalArgumentException("Unknown design");
-        JSONObject t=new JSONObject().put("id",id).put("layout",id).put("name",id.equals("classic")?"Classic":id.equals("cinema")?"Cinema":"Panel").put("wallpapers",new JSONArray()).put("rotateMinutes",0).put("inputs","auto").put("dockStyle","blur");
+        JSONObject t=new JSONObject().put("id",id).put("layout",id).put("name",id.equals("classic")?"Classic":id.equals("cinema")?"Cinema":"Panel").put("wallpapers",new JSONArray()).put("rotateMinutes",0).put("inputs","auto").put("dockStyle","blur").put("wallpaperDim",0).put("accentMode","theme").put("accentColor","#A9EAD8").put("wallpaperAccent","#A9EAD8").put("focusStyle","theme");
         for(String flag:FLAGS)t.put(flag,true);return t;
     }
     static JSONObject defaults(){try{return new JSONObject().put("schema",2).put("idleScreen",true).put("idleWallpaper","").put("homeName","HOME").put("active","classic").put("weather",new JSONObject().put("mode","off").put("unit","celsius")).put("themes",new JSONArray().put(preset("classic")));}catch(JSONException e){throw new IllegalStateException(e);}}
@@ -82,6 +83,7 @@ final class StudioConfig {
         JSONArray cleanOrder=new JSONArray();Set<String> ordered=new HashSet<>();
         for(int i=0;i<order.length();i++){String pkg=order.getString(i);if(pkg.length()>180||!pkg.matches("[a-zA-Z][a-zA-Z0-9_]*(\\.[a-zA-Z0-9_]+)+")||!ordered.add(pkg))throw new IllegalArgumentException("Invalid app order");cleanOrder.put(pkg);}
         result.put("appOrder",cleanOrder);
+        result.put("rememberRecentApps",source.optBoolean("rememberRecentApps",true));
         String liveTvApp=source.optString("liveTvApp","");
         if(!liveTvApp.isEmpty()&&(!liveTvApp.matches("[a-zA-Z][a-zA-Z0-9_]*(\\.[a-zA-Z0-9_]+)+")||liveTvApp.length()>180||liveTvApp.equals("com.gathin.tvhome")||liveTvApp.equals("com.amazon.tv.launcher")))throw new IllegalArgumentException("Choose an installed app for Live TV");
         result.put("liveTvApp",liveTvApp);
@@ -97,7 +99,11 @@ final class StudioConfig {
         for(int i=0;i<ts.length();i++){JSONObject t=ts.getJSONObject(i);String id=t.getString("id"),name=t.getString("name").trim(),layout=t.getString("layout");if(!DESIGNS.contains(id)||!ids.add(id)||!id.equals(layout))throw new IllegalArgumentException("Invalid theme");
             int rotation=t.optInt("rotateMinutes",0);if(rotation!=0&&(rotation<1||rotation>1440))throw new IllegalArgumentException("Rotation must be off or 1–1440 minutes");
             JSONArray images=t.optJSONArray("wallpapers");if(images==null)images=new JSONArray();if(images.length()>8)throw new IllegalArgumentException("Eight wallpapers per theme maximum");for(int j=0;j<images.length();j++)if(!id(images.getString(j)))throw new IllegalArgumentException("Invalid image ID");
-            JSONObject normalized=preset(id).put("rotateMinutes",rotation).put("wallpapers",images);for(String flag:FLAGS)normalized.put(flag,t.optBoolean(flag,true));String input=t.optString("inputs","auto");if(!Arrays.asList("auto","show","hide").contains(input))throw new IllegalArgumentException("Invalid Inputs mode");normalized.put("inputs",input);String dock=t.optString("dockStyle","blur");if(!Arrays.asList("blur","dark","light").contains(dock))throw new IllegalArgumentException("Invalid dock appearance");normalized.put("dockStyle",dock);clean.put(normalized);}
+            JSONObject normalized=preset(id).put("rotateMinutes",rotation).put("wallpapers",images);for(String flag:FLAGS)normalized.put(flag,t.optBoolean(flag,true));String input=t.optString("inputs","auto");if(!Arrays.asList("auto","show","hide").contains(input))throw new IllegalArgumentException("Invalid Inputs mode");normalized.put("inputs",input);String dock=t.optString("dockStyle","blur");if(!Arrays.asList("blur","dark","light").contains(dock))throw new IllegalArgumentException("Invalid dock appearance");normalized.put("dockStyle",dock);
+            int dim=t.optInt("wallpaperDim",0);if(dim<0||dim>100)throw new IllegalArgumentException("Wallpaper dimming must be 0–100");
+            String modeAccent=t.optString("accentMode","theme"),focus=t.optString("focusStyle","theme"),color=t.optString("accentColor","#A9EAD8"),auto=t.optString("wallpaperAccent","#A9EAD8");
+            if(!Arrays.asList("theme","wallpaper","manual").contains(modeAccent)||!Arrays.asList("theme","zoom","outline","instant").contains(focus)||!color.matches("#[0-9a-fA-F]{6}")||!auto.matches("#[0-9a-fA-F]{6}"))throw new IllegalArgumentException("Invalid appearance options");
+            normalized.put("wallpaperDim",dim).put("accentMode",modeAccent).put("accentColor",color).put("wallpaperAccent",auto).put("focusStyle",focus);clean.put(normalized);}
         String active=source.getString("active");if(!ids.contains(active))throw new IllegalArgumentException("Active theme missing");return result.put("active",active).put("themes",clean);
     }
     static synchronized void save(Context c,JSONObject source)throws JSONException{
@@ -106,7 +112,9 @@ final class StudioConfig {
         String idleWallpaper=clean.optString("idleWallpaper","");
         if(!idleWallpaper.isEmpty()&&!image(c,idleWallpaper).isFile())throw new IllegalArgumentException("Upload screensaver wallpaper before saving");
         for(int i=0;i<clean.getJSONArray("themes").length();i++){JSONArray images=clean.getJSONArray("themes").getJSONObject(i).getJSONArray("wallpapers");for(int j=0;j<images.length();j++)if(!image(c,images.getString(j)).isFile())throw new IllegalArgumentException("Upload wallpaper before saving theme");}
+        ThemeAppearance.prepare(c,before,clean);displayChanged=!effective(before).equals(effective(clean));
         if(!prefs(c).edit().putString("studio_config",clean.toString()).putString("studio_config_last_good",clean.toString()).putLong("ui_revision",prefs(c).getLong("ui_revision",0)+(displayChanged?1:0)).commit())throw new IllegalStateException("Unable to save configuration");
+        if(!clean.optBoolean("rememberRecentApps",true))RecentApps.clear(c);
         cached=null;snapshot(c);WallpaperStore.afterSave(c,references(before),references(clean));
         HomeRedirectService.refreshLiveTvShortcut();if(weatherChanged)WeatherInfo.invalidate();if(displayChanged)HomeRedirectService.refreshHome();
     }
