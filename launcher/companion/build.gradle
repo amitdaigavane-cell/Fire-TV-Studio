@@ -3,6 +3,14 @@ android {
     namespace 'com.veyra.tvmanager'
     compileSdk 34
     signingConfigs {
+        // Fixed key for this fork's development builds, so each CI build installs over the last one.
+        // Not a release key: it only signs personal debug builds.
+        debug {
+            storeFile rootProject.file('fts-debug.keystore')
+            storePassword 'android'
+            keyAlias 'androiddebugkey'
+            keyPassword 'android'
+        }
         release {
             if (rootProject.hasReleaseCredentials) {
                 storeFile rootProject.file(rootProject.releaseCredentials.store)

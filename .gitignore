@@ -19,3 +19,4 @@ adbkey*
 *-device.json
 .env
 .env.*
+!launcher/fts-debug.keystore

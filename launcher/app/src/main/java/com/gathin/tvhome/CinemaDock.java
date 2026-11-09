@@ -4,20 +4,29 @@ import android.graphics.*;
 import android.graphics.drawable.Drawable;
 import android.view.View;
 
-/** Static, 160-pixel-wide wallpaper blur. Never captures apps or runs a blur loop. */
+/** Dock surface: clear glass (edge and highlights only), a static 160-pixel wallpaper blur, or a flat shade. Never captures apps or runs a blur loop. */
 final class CinemaDock extends Drawable {
     private final View home, dock;
     private final String style;
     private final Paint paint=new Paint(Paint.ANTI_ALIAS_FLAG|Paint.FILTER_BITMAP_FLAG);
     private final Path clip=new Path();
-    private final RectF destination=new RectF();
+    private final RectF destination=new RectF(),edge=new RectF();
+    private final Paint glass=new Paint(Paint.ANTI_ALIAS_FLAG),shine=new Paint(Paint.ANTI_ALIAS_FLAG),rim=new Paint(Paint.ANTI_ALIAS_FLAG);
+    private float radius;
     private final int[] homePosition=new int[2],dockPosition=new int[2];
     private Bitmap blurred;
     private Drawable source;
     private int width,height;
     private long wallpaperRevision=-1;
     CinemaDock(View home,View dock,String style){this.home=home;this.dock=dock;this.style=style;}
-    @Override protected void onBoundsChange(Rect b){float r=24*home.getResources().getDisplayMetrics().density;clip.reset();clip.addRoundRect(new RectF(b),r,r,Path.Direction.CW);}
+    @Override protected void onBoundsChange(Rect b){
+        float d=home.getResources().getDisplayMetrics().density,r=24*d;radius=r;clip.reset();clip.addRoundRect(new RectF(b),r,r,Path.Direction.CW);
+        // Clear glass: a faint diagonal sheen, a bright top highlight and a thin light rim. No blur, so the wallpaper reads through.
+        glass.setShader(new LinearGradient(b.left,b.top,b.right,b.bottom,new int[]{0x1cffffff,0x06ffffff,0x12ffffff},new float[]{0f,.45f,1f},Shader.TileMode.CLAMP));
+        shine.setShader(new LinearGradient(0,b.top,0,b.top+r*1.2f,0x3dffffff,0x00ffffff,Shader.TileMode.CLAMP));
+        rim.setStyle(Paint.Style.STROKE);rim.setStrokeWidth(Math.max(1f,d));rim.setColor(0x66ffffff);
+        edge.set(b);edge.inset(rim.getStrokeWidth()/2,rim.getStrokeWidth()/2);
+    }
     private void prepare(){
         Drawable background=home.getBackground();int w=home.getWidth(),h=home.getHeight();
         long revision=HomeWallpaper.revision();if(background==source&&w==width&&h==height&&wallpaperRevision==revision)return;
@@ -41,6 +50,10 @@ final class CinemaDock extends Drawable {
     }
     @Override public void draw(Canvas canvas){
         int save=canvas.save();canvas.clipPath(clip);
+        if(style.equals("glass")){
+            Rect b=getBounds();canvas.drawRect(b,glass);canvas.drawRect(b.left,b.top,b.right,b.top+radius*1.2f,shine);
+            canvas.restoreToCount(save);canvas.drawRoundRect(edge,radius,radius,rim);return;
+        }
         if(style.equals("blur")){
             prepare();if(blurred!=null){home.getLocationOnScreen(homePosition);dock.getLocationOnScreen(dockPosition);float x=homePosition[0]-dockPosition[0],y=homePosition[1]-dockPosition[1];destination.set(x,y,x+width,y+height);canvas.drawBitmap(blurred,null,destination,paint);}
             canvas.drawColor(((HomeSurface)home).accentShade(0x88,.12f));
