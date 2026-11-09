@@ -13,6 +13,7 @@ import android.widget.LinearLayout;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
+import org.json.JSONObject;
 
 /** Runs only in the focused Home surface. No service, media polling or global timeout changes. */
 final class HomeIdle {
@@ -21,6 +22,8 @@ final class HomeIdle {
     private long touched;
     private FrameLayout shade;
     private TextView clock, day, date, weather;
+    private WeatherCard card;
+    private WeatherFx fx;
     private LinearLayout information;
     private int position;
     private final Runnable tick=this::tick;
@@ -60,15 +63,17 @@ final class HomeIdle {
                 contrast.setBackground(new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT,
                         new int[]{0xc908101c,0x8808101c,0x1808101c}));
                 shade.addView(contrast,new FrameLayout.LayoutParams(-1,-1));
+                fx=new WeatherFx(home.getContext());shade.addView(fx,new FrameLayout.LayoutParams(-1,-1));
                 information=new LinearLayout(home.getContext());information.setOrientation(LinearLayout.VERTICAL);
                 day=label(16,0xffd8e4ef);day.setLetterSpacing(.16f);information.addView(day);
                 clock=label(88,Color.WHITE);clock.setLetterSpacing(-.045f);
                 LinearLayout.LayoutParams cp=new LinearLayout.LayoutParams(-1,-2);cp.topMargin=dp(10);information.addView(clock,cp);
                 date=label(24,0xfff0f4fa);LinearLayout.LayoutParams dt=new LinearLayout.LayoutParams(-1,-2);dt.topMargin=dp(6);information.addView(date,dt);
-                weather=label(18,0xffd8e4ef);weather.setMaxLines(2);
-                LinearLayout.LayoutParams wp=new LinearLayout.LayoutParams(-1,-2);wp.topMargin=dp(22);information.addView(weather,wp);
+                // Weather lives in a glass card at the top right; the label only drives it.
+                card=new WeatherCard(home.getContext(),true);weather=card.label();
+                FrameLayout.LayoutParams cardLp=new FrameLayout.LayoutParams(-2,-2,Gravity.TOP|Gravity.END);cardLp.topMargin=dp(40);cardLp.rightMargin=dp(48);
                 FrameLayout.LayoutParams info=new FrameLayout.LayoutParams(Math.min(dp(520),home.getWidth()-dp(128)),-2,Gravity.BOTTOM|Gravity.START);
-                info.leftMargin=dp(64);info.rightMargin=dp(64);info.bottomMargin=dp(62);shade.addView(information,info);
+                info.leftMargin=dp(64);info.rightMargin=dp(64);info.bottomMargin=dp(62);shade.addView(information,info);shade.addView(card,cardLp);
                 home.addView(shade,new FrameLayout.LayoutParams(-1,-1));
             }
             Date now=new Date();Locale locale=Locale.getDefault();
@@ -76,6 +81,7 @@ final class HomeIdle {
             day.setText(new SimpleDateFormat("EEEE",locale).format(now).toUpperCase(locale));
             date.setText(new SimpleDateFormat(android.text.format.DateFormat.getBestDateTimePattern(locale,"dMMMMyyyy"),locale).format(now));
             shade.setBackground(HomeWallpaper.background(home.getContext(),StudioConfig.idleWallpaper(home.getContext())));WeatherInfo.bind(weather);
+            JSONObject now2=WeatherInfo.card();fx.mode(now2==null?"clear":now2.optString("scene","clear"),StudioConfig.flag(home.getContext(),"animations"));
             // Reuse the wallpaper bitmap and weather cache. Only update once per minute.
             int[][] spots={{0,0},{8,-6},{-6,-10},{6,4},{-8,6},{0,-4}};int[] spot=spots[position++%spots.length];
             information.setTranslationX(dp(spot[0]));information.setTranslationY(dp(spot[1]));
@@ -102,6 +108,6 @@ final class HomeIdle {
     }
     private void removeShade(){
         if(shade!=null){shade.animate().withEndAction(null);shade.animate().cancel();WeatherInfo.unbind(weather);home.removeView(shade);}
-        shade=null;clock=null;day=null;date=null;weather=null;information=null;dismissing=false;
+        shade=null;clock=null;day=null;date=null;weather=null;information=null;card=null;fx=null;dismissing=false;
     }
 }
