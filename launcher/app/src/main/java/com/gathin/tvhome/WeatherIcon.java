@@ -5,7 +5,8 @@ import android.graphics.drawable.Drawable;
 
 /** Small vector weather icons drawn with Canvas, keyed by WeatherInfo.scene(). */
 final class WeatherIcon extends Drawable {
-    private static final int SUN=0xffffd36a, CLOUD=0xffe8eef8, DARK_CLOUD=0xffc9d2e2, RAIN=0xff8fc6ff, SNOW=0xffbfe0ff, BOLT=0xffffd36a;
+    private static final int SUN=0xffffd36a, CLOUD=0xffe8eef8, DARK_CLOUD=0xffc9d2e2, RAIN=0xff8fc6ff, SNOW=0xffbfe0ff, BOLT=0xffffd36a, MOON=0xfff3eed8;
+    private static final PorterDuffXfermode CUT=new PorterDuffXfermode(PorterDuff.Mode.CLEAR);
     private final Paint fill=new Paint(Paint.ANTI_ALIAS_FLAG), line=new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Path path=new Path();
     private String scene="clear";
@@ -21,6 +22,8 @@ final class WeatherIcon extends Drawable {
         switch(scene){
             case "clear": sun(c,12,12,4.2f,true);break;
             case "partly": sun(c,9,9,3.6f,false);cloud(c,9,19,CLOUD,.85f);break;
+            case "clear-night": moon(c,12,12,6.2f);break;
+            case "partly-night": moon(c,9,9,4.4f);cloud(c,9,19,CLOUD,.85f);break;
             case "cloud": cloud(c,7,18,CLOUD,1f);break;
             case "fog":
                 line.setColor(CLOUD);line.setStrokeWidth(1.8f);
@@ -47,6 +50,13 @@ final class WeatherIcon extends Drawable {
         if(!rays)return;
         line.setColor(SUN);
         for(int i=0;i<8;i++){double a=Math.PI/4*i;float x1=(float)(x+Math.cos(a)*(r+2.3)),y1=(float)(y+Math.sin(a)*(r+2.3)),x2=(float)(x+Math.cos(a)*(r+4.4)),y2=(float)(y+Math.sin(a)*(r+4.4));c.drawLine(x1,y1,x2,y2,line);}
+    }
+    /** Crescent moon: a pale disc with a second disc cut out of it. */
+    private void moon(Canvas c,float x,float y,float r){
+        int layer=c.saveLayer(x-r-2,y-r-2,x+r+2,y+r+2,null);
+        fill.setColor(MOON);c.drawCircle(x,y,r,fill);
+        fill.setXfermode(CUT);c.drawCircle(x+r*.55f,y-r*.35f,r*.85f,fill);fill.setXfermode(null);
+        c.restoreToCount(layer);
     }
     /** A cloud whose flat base sits at baseY, starting near x. */
     private void cloud(Canvas c,float x,float baseY,int color,float scale){

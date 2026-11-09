@@ -14,7 +14,7 @@ public final class WeatherApi {
     /** Current conditions plus wind and a short daily forecast (today and the next three days), validated like current(). */
     public static JSONObject full(JSONObject place,Fetcher fetch)throws Exception {
         double lat=place.getDouble("latitude"),lon=place.getDouble("longitude");coordinates(lat,lon);
-        JSONObject response=fetch.get("https://api.open-meteo.com/v1/forecast?latitude="+lat+"&longitude="+lon+"&current=temperature_2m,weather_code,wind_speed_10m&daily=weather_code,temperature_2m_max,temperature_2m_min&temperature_unit=celsius&wind_speed_unit=kmh&timezone=auto&timeformat=unixtime&forecast_days=4");
+        JSONObject response=fetch.get("https://api.open-meteo.com/v1/forecast?latitude="+lat+"&longitude="+lon+"&current=temperature_2m,weather_code,wind_speed_10m,is_day&daily=weather_code,temperature_2m_max,temperature_2m_min&temperature_unit=celsius&wind_speed_unit=kmh&timezone=auto&timeformat=unixtime&forecast_days=4");
         JSONObject current=response.getJSONObject("current");double temperature=current.getDouble("temperature_2m");if(!Double.isFinite(temperature)||temperature< -90||temperature>65)throw new IOException("Invalid temperature");
         if(!"°C".equals(response.getJSONObject("current_units").getString("temperature_2m")))throw new IOException("Unexpected weather unit");
         if(Math.abs(System.currentTimeMillis()-current.getLong("time")*1000L)>21600000)throw new IOException("Weather timestamp is stale; check TV date and time");

@@ -61,7 +61,7 @@ public final class WeatherInfo {
             JSONObject now=response.getJSONObject("current");int code=now.getInt("weather_code");double wind=now.optDouble("wind_speed_10m",0);
             JSONObject card=new JSONObject().put("name",place.optString("name","Nearby")).put("unit",fahrenheit?"F":"C")
                 .put("temp",convert(now.getDouble("temperature_2m"),fahrenheit)).put("code",code).put("wind",Math.round(wind))
-                .put("condition",condition(code)).put("scene",scene(code,wind));
+                .put("condition",condition(code)).put("day",now.optInt("is_day",1)==1).put("scene",night(scene(code,wind),now.optInt("is_day",1)==1));
             JSONObject daily=response.optJSONObject("daily");JSONArray days=new JSONArray();
             if(daily!=null){
                 JSONArray t=daily.getJSONArray("time"),c=daily.getJSONArray("weather_code"),hi=daily.getJSONArray("temperature_2m_max"),lo=daily.getJSONArray("temperature_2m_min");
@@ -70,6 +70,8 @@ public final class WeatherInfo {
             return card.put("days",days);
         }catch(JSONException e){return null;}
     }
+    /** Clear and partly cloudy skies get a night variant (moon instead of sun). */
+    private static String night(String scene,boolean day){return !day&&(scene.equals("clear")||scene.equals("partly"))?scene+"-night":scene;}
     private static int convert(double celsius,boolean fahrenheit){return (int)Math.round(fahrenheit?celsius*9/5+32:celsius);}
     /** Visual family for icons and idle effects. Blizzard is snow with wind of 40 km/h or more. */
     static String scene(int code,double windKmh){
