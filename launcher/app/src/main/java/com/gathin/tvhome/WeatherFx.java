@@ -139,7 +139,7 @@ final class WeatherFx extends View {
     }
 
     private final android.util.SparseArray<PorterDuffColorFilter> tints=new android.util.SparseArray<>();
-    private PorterDuffColorFilter tint(int rgb){PorterDuffColorFilter f=tints.get(rgb);if(f==null){f=new PorterDuffColorFilter(0xff000000|rgb,PorterDuff.Mode.MODULATE);tints.put(rgb,f);}return f;}
+    private PorterDuffColorFilter tint(int rgb){PorterDuffColorFilter f=tints.get(rgb);if(f==null){f=new PorterDuffColorFilter(0xff000000|rgb,PorterDuff.Mode.MULTIPLY);tints.put(rgb,f);}return f;}
     private void drawGlow(Canvas c,float x,float y,float r,int rgb,float alpha){
         matrix.setScale(r,r);matrix.postTranslate(x,y);glow.setLocalMatrix(matrix);
         fill.setShader(glow);fill.setColorFilter(tint(rgb));fill.setAlpha(Math.max(0,Math.min(255,(int)(alpha*255))));
