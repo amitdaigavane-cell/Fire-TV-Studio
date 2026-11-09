@@ -31,6 +31,8 @@ public final class StudioProvider extends ContentProvider {
                 case "weatherRetry":WeatherInfo.retry();response.put("requested",true);break;
                 case "apps":JSONArray apps=new JSONArray();for(ResolveInfo r:LaunchableApps.query(c.getPackageManager(),c.getPackageName()))apps.put(new JSONObject().put("package",r.activityInfo.packageName).put("name",r.loadLabel(c.getPackageManager()).toString()));response.put("apps",apps);break;
                 case "appsSave":JSONObject changes=new JSONObject(new String(Base64.decode(arg,Base64.URL_SAFE),StandardCharsets.UTF_8));JSONArray dock=changes.getJSONArray("dock"),hidden=changes.getJSONArray("hidden");if(dock.length()>6)throw new IllegalArgumentException("Six favorites maximum");if(hidden.length()>300)throw new IllegalArgumentException("Too many hidden apps");java.util.ArrayList<String> pins=new java.util.ArrayList<>();java.util.Set<String> hide=new java.util.HashSet<>();for(int i=0;i<dock.length();i++){String p=dock.getString(i);validPackage(p);if(!pins.contains(p))pins.add(p);}for(int i=0;i<hidden.length();i++){String p=hidden.getString(i);validPackage(p);hide.add(p);}StudioConfig.prefs(c).edit().putString("dock",String.join(",",pins)).putStringSet("hidden_v3",hide).putLong("ui_revision",StudioConfig.prefs(c).getLong("ui_revision",0)+1).commit();HomeRedirectService.refreshHome();response.put("saved",true);break;
+                case "commitVideo":response.put("bytes",VideoWall.commit(c));response.put("video",true);break;
+                case "videoOff":VideoWall.off(c);response.put("video",false);break;
                 case "commitImage":WallpaperStore.commit(c,arg);response.put("image",arg);break;
                 default:throw new IllegalArgumentException("Unknown Studio action");
             }
@@ -48,7 +50,7 @@ public final class StudioProvider extends ContentProvider {
     }
     private void validPackage(String p){if(!p.matches("[a-zA-Z][a-zA-Z0-9_.]{1,180}")||p.equals(getContext().getPackageName())||p.equals("com.amazon.tv.launcher"))throw new IllegalArgumentException("Invalid app");}
     @Override public ParcelFileDescriptor openFile(Uri uri,String mode)throws FileNotFoundException{
-        authorize();if(!mode.equals("w")||uri.getPathSegments().size()!=2||!"wallpaper".equals(uri.getPathSegments().get(0)))throw new FileNotFoundException("Unsupported path");
+        authorize();if(mode.equals("w")&&uri.getPathSegments().size()==2&&"video".equals(uri.getPathSegments().get(0))&&"home".equals(uri.getPathSegments().get(1)))return VideoWall.openUpload(getContext());authorize();if(!mode.equals("w")||uri.getPathSegments().size()!=2||!"wallpaper".equals(uri.getPathSegments().get(0)))throw new FileNotFoundException("Unsupported path");
         return WallpaperStore.open(getContext(),uri.getLastPathSegment());
     }
     @Override public Cursor query(Uri u,String[] p,String s,String[] a,String sort){throw new UnsupportedOperationException();}

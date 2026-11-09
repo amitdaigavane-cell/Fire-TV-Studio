@@ -15,6 +15,17 @@ import java.util.*;
 /** Native UI for the persistent Home window and the activity fallback. */
 public final class HomeSurface extends FrameLayout {
     private static final int DOCK_SLOTS=5;
+    private VideoWall video;
+    private long videoRevision=-1;
+    /** Keep the video wallpaper as the bottom-most child; the still wallpaper stays as this view's background. */
+    private void attachVideo(){
+        if(!VideoWall.enabled(getContext())){if(video!=null){video.release();video=null;}videoRevision=-1;return;}
+        long revision=StudioConfig.prefs(getContext()).getLong("video_revision",0);
+        if(video!=null&&revision!=videoRevision){video.release();video=null;}
+        if(video==null){video=new VideoWall(getContext());videoRevision=revision;}
+        addView(video,0,new LayoutParams(-1,-1));
+        updateIdle();
+    }
     private static final int WHITE=0xfff4f6fb, MUTED=0xffa8b4c7, ACCENT=0xffa9ead8;
     private final SharedPreferences prefs;
     private final ArrayList<App> apps=new ArrayList<>();
@@ -53,6 +64,12 @@ public final class HomeSurface extends FrameLayout {
     }
     private int dp(float v){return Math.round(v*getResources().getDisplayMetrics().density);}
     private TextView text(String value,float size,int color){TextView t=new TextView(getContext());t.setText(value);t.setTextSize(size);t.setTextColor(color);t.setTypeface(Typeface.create("sans-serif",Typeface.NORMAL));t.setIncludeFontPadding(false);t.setShadowLayer(dp(2),0,dp(1),0x8c000000);return t;}
+    /** Cinema with Clear glass: a light dark wash for legibility under clear glass. Other layouts keep the theme shade. */
+    private android.graphics.drawable.Drawable menuBackground(){
+        if(layout.equals("cinema")&&"glass".equals(StudioConfig.theme(getContext()).optString("dockStyle","glass")))
+            return new android.graphics.drawable.LayerDrawable(new android.graphics.drawable.Drawable[]{shape(0x59101624,20),new GlassDrawable(dp(20),getResources().getDisplayMetrics().density)});
+        return shape(accentShade(0xff,.10f),20);
+    }
     private GradientDrawable shape(int color,int radius){GradientDrawable d=new GradientDrawable();d.setColor(color);d.setCornerRadius(dp(radius));return d;}
     private StateListDrawable tileBackground(){StateListDrawable s=new StateListDrawable();int radius=layout.equals("classic")?14:8;GradientDrawable f=shape(accentShade(0xff,0.28f),radius);f.setStroke(dp(2),accent());s.addState(new int[]{android.R.attr.state_focused},f);s.addState(new int[]{},shape(accentShade(0xdd,0.12f),radius));return s;}
     int accent(){return activeAccent;}
@@ -109,7 +126,7 @@ public final class HomeSurface extends FrameLayout {
     private void saveDock(){prefs.edit().putString("dock",String.join(",",pinned)).apply();changed();}
 
     private void build(){
-        if(idle!=null)idle.stop();cinemaGreeting=null;rebuilding=true;if(weather!=null)WeatherInfo.unbind(weather);dismissMenu();removeAllViews();firstApp=null;cinemaDocks.clear();targets.clear();nav.clear();
+        if(idle!=null)idle.stop();cinemaGreeting=null;rebuilding=true;if(weather!=null)WeatherInfo.unbind(weather);dismissMenu();removeAllViews();attachVideo();firstApp=null;cinemaDocks.clear();targets.clear();nav.clear();
         layout=StudioConfig.layout(getContext());org.json.JSONObject appearance=StudioConfig.theme(getContext());focusStyle=appearance.optString("focusStyle","theme");activeAccent=Color.parseColor(appearance.optString("accentColor","#A9EAD8"));animations=StudioConfig.flag(getContext(),"animations");sideNav.clear();wallpaperKey=StudioConfig.wallpaper(getContext());setBackground(HomeWallpaper.background(getContext()));for(View dock:cinemaDocks)dock.invalidate();
         if(!layout.equals("classic")){buildAlternative();return;}
         scroll=new ScrollView(getContext());scroll.setFillViewport(true);scroll.setClipToPadding(false);scroll.setVerticalScrollBarEnabled(false);
@@ -281,7 +298,7 @@ public final class HomeSurface extends FrameLayout {
             ()->{if(!HomeRedirectService.requestRestart())Toast.makeText(getContext(),"Restart is unavailable. Enable this Home in TV Home Studio.",Toast.LENGTH_LONG).show();}));
     }
     private void menu(String title,List<String> labels,List<Runnable> actions){
-        dismissMenu();LinearLayout panel=vertical();panel.setPadding(dp(24),dp(22),dp(24),dp(22));panel.setBackground(shape(accentShade(0xff,.10f),20));
+        dismissMenu();LinearLayout panel=vertical();panel.setPadding(dp(24),dp(22),dp(24),dp(22));panel.setBackground(menuBackground());
         TextView titleView=text(title,20,WHITE);titleView.setPadding(0,0,0,dp(20));panel.addView(titleView,lp(-1,-2));
         ScrollView options=new ScrollView(getContext());options.setVerticalScrollBarEnabled(false);LinearLayout rows=vertical();rows.setPadding(dp(2),dp(2),dp(2),dp(2));options.addView(rows);panel.addView(options,new LinearLayout.LayoutParams(-1,0,1));
         for(int i=0;i<labels.size();i++){final Runnable action=actions.get(i);TextView b=text(labels.get(i),15,WHITE);b.setGravity(Gravity.CENTER_VERTICAL);b.setPadding(dp(16),dp(12),dp(16),dp(12));b.setMinHeight(dp(46));b.setBackground(tileBackground());b.setFocusable(true);b.setClickable(true);LinearLayout.LayoutParams item=lp(-1,-2);if(i>0)item.topMargin=dp(10);rows.addView(b,item);b.setOnClickListener(v->{dismissMenu();action.run();});}
@@ -342,10 +359,10 @@ public final class HomeSurface extends FrameLayout {
         if(!active){if(weather!=null)WeatherInfo.unbind(weather);}
         else if(isAttachedToWindow())post(wallpaperTick);
     }
-    private void updateIdle(){if(idle!=null)idle.active(surfaceActive&&isAttachedToWindow()&&getWindowVisibility()==VISIBLE&&getVisibility()==VISIBLE&&hasWindowFocus()&&StudioConfig.read(getContext()).optBoolean("idleScreen",true));}
+    private void updateIdle(){if(video!=null)video.setPlaying(surfaceActive&&isAttachedToWindow()&&getWindowVisibility()==VISIBLE&&getVisibility()==VISIBLE);if(idle!=null)idle.active(surfaceActive&&isAttachedToWindow()&&getWindowVisibility()==VISIBLE&&getVisibility()==VISIBLE&&hasWindowFocus()&&StudioConfig.read(getContext()).optBoolean("idleScreen",true));}
     @Override public void onWindowFocusChanged(boolean focus){super.onWindowFocusChanged(focus);updateIdle();}
     @Override protected void onAttachedToWindow(){super.onAttachedToWindow();updateIdle();if(weather!=null)WeatherInfo.bind(weather);removeCallbacks(wallpaperTick);postDelayed(wallpaperTick,60000);}
     @Override protected void onWindowVisibilityChanged(int visibility){super.onWindowVisibilityChanged(visibility);updateIdle();if(wallpaperTick!=null){removeCallbacks(wallpaperTick);if(surfaceActive&&visibility==VISIBLE&&isAttachedToWindow())post(wallpaperTick);}}
-    @Override protected void onDetachedFromWindow(){if(idle!=null)idle.stop();removeCallbacks(wallpaperTick);if(weather!=null)WeatherInfo.unbind(weather);super.onDetachedFromWindow();}
+    @Override protected void onDetachedFromWindow(){if(video!=null)video.setPlaying(false);if(idle!=null)idle.stop();removeCallbacks(wallpaperTick);if(weather!=null)WeatherInfo.unbind(weather);super.onDetachedFromWindow();}
     public static void invalidateApps(){catalogRevision++;}
 }
