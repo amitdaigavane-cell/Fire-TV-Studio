@@ -70,7 +70,7 @@ function videoCard(main){
     main.append(card(node('h2',{},'Video wallpaper'),
         p('A short, muted video loop behind Home. It pauses while an app is open, and your still wallpaper shows until it starts.','small'),
         p('Use an MP4 (H.264), ideally 20–60 seconds and around 10 MB. Before sending, disconnect any computer from the TV and keep this phone awake on the same Wi‑Fi.','small'),
-        button('Choose a video',()=>run('Opening your videos…',async()=>{const clip=await call('pickVideo');if(!clip||!clip.bytes)return;
+        button('Choose a video',()=>run('Opening your videos…',async()=>{const clip=await call('pickVideo');if(!clip||!clip.bytes){toast('No video was selected. Choose an MP4 file and tap Select.');return;}
             if(clip.bytes>20*1048576){modal(node('h2',{},'Large video'),p(clip.name+' is '+mb(clip.bytes)+'. Large videos take longer to send and are more likely to drop. A clip around 10 MB works best.','small'),button('Send anyway',()=>{finishModal();send();},'primary full'),button('Cancel',finishModal,'quiet full'));return;}
             await send();}),'primary full'),
         button('Remove video wallpaper',()=>run('Removing video wallpaper…',async()=>{await call('videoOff');toast('Video removed. Your still wallpaper is back.');}),'quiet full')));
