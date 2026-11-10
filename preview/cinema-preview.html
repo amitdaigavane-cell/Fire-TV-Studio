@@ -140,11 +140,13 @@ kbd{font:500 11px var(--mono);border:1px solid var(--line);border-bottom-width:2
     <div class="grp"><span>Favourites</span>
       <div class="seg" id="dk"><button id="d3" data-d="3">3</button><button id="d5" data-d="5">5</button><button id="d8" data-d="8" aria-pressed="true">8 (slides)</button></div></div>
     <div class="grp"><span>Outside</span>
-      <div class="seg" id="wx"><button id="x-snow" data-x="snow" aria-pressed="true">Snow</button><button id="x-rain" data-x="rain">Rain</button><button id="x-fog" data-x="fog">Fog</button><button id="x-storm" data-x="storm">Storm</button><button id="x-bliz" data-x="blizzard">Blizzard</button><button id="x-cloud" data-x="cloud">Cloudy</button><button id="x-clear" data-x="clear">Clear</button></div></div>
+      <div class="seg" id="wx"><button id="x-snow" data-x="snow" aria-pressed="true">Snow</button><button id="x-rain" data-x="rain">Rain</button><button id="x-fog" data-x="fog">Fog</button><button id="x-storm" data-x="storm">Storm</button><button id="x-bliz" data-x="blizzard">Blizzard</button><button id="x-cloud" data-x="cloud">Cloudy</button><button id="x-clear" data-x="clear">Clear day</button><button id="x-night" data-x="night">Clear night</button></div>
+      <button id="shoot" class="file" type="button" style="background:transparent">Shooting star now</button></div>
     <div class="grp"><span>Home name</span><input id="hname" type="text" maxlength="24" value="HOME" aria-label="Home name" style="background:transparent;border:1px solid var(--line);border-radius:8px;color:var(--ink);padding:5px 8px;font:500 13px var(--tv-font);width:150px"></div>
     <div class="grp"><span>Wallpaper</span>
       <div class="seg" id="wp"><button id="w-lake" data-w="lake" aria-pressed="true">Lake</button><button id="w-neb" data-w="neb">Nebula</button><button id="w-dusk" data-w="dusk">Pier</button></div>
       <label class="file">Use my photo or video<input id="upload" type="file" accept="image/*,video/*"></label></div>
+    <div class="hint" id="lum" style="margin-left:0"></div>
     <div class="hint">Click the TV, then <kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd> <kbd>Enter</kbd> <kbd>Esc</kbd> = Back</div>
   </div>
 
@@ -157,7 +159,7 @@ kbd{font:500 11px var(--mono);border:1px solid var(--line);border-bottom-width:2
     <div class="note"><div class="tag">Dock</div><h3>Five apps and More apps always visible</h3><p>The dock shows five favourites plus More apps. Pin more than five and the row slides as you move right, with dots showing where you are; More apps stays pinned at the end.</p></div>
     <div class="note"><div class="tag">Glass</div><h3>Clear glass</h3><p>Almost no tint or blur, so the wallpaper shows through; a bright edge and inner highlights give the glass shape. Code: <code>CinemaDock</code></p></div>
     <div class="note"><div class="tag">Wallpaper</div><h3>Video wallpapers</h3><p>Try one with "Use my photo or video". On the TV this needs a short, muted 1080p H.264 loop; it pauses when an app opens.</p></div>
-    <div class="note"><div class="tag">Idle</div><h3>Weather card and live weather</h3><p>The same card sits top right, and the idle screen shows snow, a blizzard, rain, a thunderstorm, fog or drifting cloud to match Open-Meteo for Regina. Pick "Outside" above to try each; values are a sample.</p></div>
+    <div class="note"><div class="tag">Idle</div><h3>Weather card and live weather</h3><p>The same card sits top right. The idle screen shows snow, blizzard, rain, storm, fog, cloud, a sun glare with soft light rays by day, and moonlight with stars and a shooting star every 60 seconds by night. Effects tone down on bright wallpapers. Pick "Outside" above to try each; values are a sample.</p></div>
   </div>
 </div>
 
@@ -188,9 +190,10 @@ kbd{font:500 11px var(--mono);border:1px solid var(--line);border-bottom-width:2
     fog:`<svg class="ico" viewBox="0 0 24 24"><g stroke="#e8eef8" stroke-width="1.8" stroke-linecap="round"><path d="M4 9h16M6 13h12M4 17h16"/></g></svg>`,
     storm:`<svg class="ico" viewBox="0 0 24 24"><path d="M7 14h10.5a3.2 3.2 0 0 0 .4-6.4A5 5 0 0 0 7.3 6.4 3.8 3.8 0 0 0 7 14z" fill="#c9d2e2"/><path d="M12.5 13l-2.5 4h2.4l-1.6 4 4.2-5.4h-2.5l1.5-2.6z" fill="#ffd36a"/></svg>`,
     blizzard:`<svg class="ico" viewBox="0 0 24 24"><path d="M7 13h10.5a3.2 3.2 0 0 0 .4-6.4A5 5 0 0 0 7.3 5.4 3.8 3.8 0 0 0 7 13z" fill="#e8eef8"/><g stroke="#e8eef8" stroke-width="1.4" stroke-linecap="round"><path d="M3 16h9M6 19h12M14 16h6"/></g><g fill="#bfe0ff"><circle cx="9" cy="21.5" r="1"/><circle cx="17" cy="21.5" r="1"/></g></svg>`,
+    moon:`<svg class="ico" viewBox="0 0 24 24"><path d="M15.5 3.5a8.5 8.5 0 1 0 5 15.4A7 7 0 0 1 15.5 3.5z" fill="#f3eed8"/></svg>`,
     pcloud:`<svg class="ico" viewBox="0 0 24 24"><circle cx="9" cy="9" r="3.6" fill="#ffd36a"/><path d="M9 19h9a3 3 0 0 0 .3-6A4.6 4.6 0 0 0 9.4 12 3.5 3.5 0 0 0 9 19z" fill="#e8eef8"/></svg>`
   };
-  const NOW={snow:["snow","-4°","Light snow","H -1° · L -9°"],rain:["rain","6°","Rain","H 8° · L 3°"],fog:["fog","0°","Fog","H 2° · L -5°"],storm:["storm","14°","Thunderstorm","H 18° · L 9°"],blizzard:["blizzard","-14°","Blizzard","H -11° · L -19°"],cloud:["cloud","-1°","Cloudy","H 2° · L -7°"],clear:["sun","-2°","Clear","H 1° · L -10°"]};
+  const NOW={snow:["snow","-4°","Light snow","H -1° · L -9°"],rain:["rain","6°","Rain","H 8° · L 3°"],fog:["fog","0°","Fog","H 2° · L -5°"],storm:["storm","14°","Thunderstorm","H 18° · L 9°"],blizzard:["blizzard","-14°","Blizzard","H -11° · L -19°"],cloud:["cloud","-1°","Cloudy","H 2° · L -7°"],clear:["sun","-2°","Clear","H 1° · L -10°"],night:["moon","-9°","Clear","H 1° · L -10°"]};
   const DAYS=[["Mon","pcloud","3° / -5°"],["Tue","snow","-2° / -9°"],["Wed","sun","1° / -8°"]];
   function wcard(){const n=NOW[S.x];return `<div class="wcard"><div class="wnow">${I[n[0]]}<div class="wtemp">${n[1]}</div><div class="wsub">${n[2]}<br>${n[3]}</div></div><div class="wdays">${DAYS.map(d=>`<div class="wday"><b>${d[0]}</b>${I[d[1]]}${d[2]}</div>`).join("")}</div></div>`;}
   const wtext=()=>{const n=NOW[S.x];return `Regina · ${n[1]}C · ${n[2]}`;};
@@ -202,7 +205,12 @@ kbd{font:500 11px var(--mono);border:1px solid var(--line);border-bottom-width:2
   const dateLong=d=>d.toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long"});
   const greet=()=>{const h=now().getHours();return h<12?"GOOD MORNING":h<17?"GOOD AFTERNOON":"GOOD EVENING"};
 
-  function paintWall(){
+  /* Wallpaper brightness 0..1: built-ins are measured once; photos are sampled at 32x18. */
+  const BUILTIN_LUM={lake:.42,neb:.24,dusk:.55};let wallLum=.42;
+  function measure(url){const img=new Image();img.onload=()=>{try{const c=document.createElement("canvas");c.width=32;c.height=18;const g=c.getContext("2d");g.drawImage(img,0,0,32,18);const d=g.getImageData(0,0,32,18).data;let t=0;for(let i=0;i<d.length;i+=4)t+=(.2126*d[i]+.7152*d[i+1]+.0722*d[i+2])/255;wallLum=t/(d.length/4);showLum();}catch(e){}};img.src=url;}
+  const gain=()=>Math.max(.35,Math.min(1,1.3-wallLum*1.25));
+  function showLum(){const el=document.getElementById("lum");if(el)el.textContent=`Wallpaper brightness ${Math.round(wallLum*100)}% · effect at ${Math.round(gain()*100)}%`;}
+  function paintWall(){if(!S.media){wallLum=BUILTIN_LUM[S.w]??.42;showLum();}else if(S.mediaType==="image")measure(S.media);else{wallLum=.4;showLum();}
     wallEl.innerHTML="";wallEl.style.background="";
     if(S.media&&S.mediaType==="video"){const v=document.createElement("video");v.src=S.media;v.muted=true;v.loop=true;v.autoplay=true;v.playsInline=true;wallEl.appendChild(v);v.play().catch(()=>{});}
     else wallEl.style.background=S.media?`url("${S.media}") center/cover no-repeat`:WALL[S.w];
@@ -337,6 +345,7 @@ kbd{font:500 11px var(--mono);border:1px solid var(--line);border-bottom-width:2
   ui.addEventListener("click",e=>{const el=e.target.closest(".f");box.focus();if(!el||S.menu)return;S.focus={g:groups.findIndex(r=>r.includes(el)),i:+el.dataset.i};paintFocus(false);activate();});
 
   const on=(id,fn)=>document.getElementById(id).addEventListener("click",e=>{const b=e.target.closest("button");if(b)fn(b.dataset);});
+  document.getElementById("shoot").addEventListener("click",()=>{if(S.x!=="night"){S.x="night";save();sync();}S.s="idle";S.menu=null;sync();render();nextShoot=0;box.focus();});
   on("ver",d=>{S.v=d.v;save();sync();render();});
   on("scr",d=>setScreen(d.s));
   on("dk",d=>{S.d=+d.d;S.slide=0;save();sync();render();});
@@ -349,13 +358,19 @@ kbd{font:500 11px var(--mono);border:1px solid var(--line);border-bottom-width:2
   const cv=document.getElementById("fx"),cx=cv.getContext("2d");
   const reduce=window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches;
   let parts=[],fxOn=null,raf=0,last=0;
-  let flash=0,nextBolt=0,gust=0;
+  let flash=0,nextBolt=0,gust=0,sunT=0,nextShoot=0,shot=null,flares=[],nextFlare=0;
   function seed(mode){
     parts=[];const R=Math.random;
+    if(mode==="clear")for(let i=0;i<10;i++)parts.push({a0:.42+i*.105+(R()-.5)*.05,w:.008+R()*.03,al:.07+R()*.09,ph:R()*6.28,sp:.05+R()*.08,dr:.015+R()*.02});
+    if(mode==="night"){const tints=["255,255,255","255,255,255","255,244,226","226,236,255"];for(let i=0;i<85;i++){const big=R()<.12;parts.push({x:R()*960,y:Math.pow(R(),1.4)*330,r:big?1.3+R()*.7:.45+R()*.6,b:big?1:.55+R()*.35,c:tints[Math.floor(R()*tints.length)],ph:R()*6.28,tw:.4+R()*1.1});}
+      // keep stars off the weather card (top right) and the clock (bottom left)
+      parts=parts.filter(p=>!(p.x>600&&p.y<130));
+      flares=[];nextFlare=performance.now()+800;
+      nextShoot=performance.now()+4000;shot=null;}
     if(mode==="snow")for(let i=0;i<90;i++)parts.push({x:R()*960,y:R()*540,r:.8+R()*2.2,v:18+R()*30,s:R()*6.28});
     if(mode==="blizzard")for(let i=0;i<260;i++)parts.push({x:R()*1200-120,y:R()*540,r:.7+R()*2.4,v:120+R()*160,s:R()*6.28,d:.5+R()*.8});
     if(mode==="rain"||mode==="storm"){const n=mode==="storm"?220:120;for(let i=0;i<n;i++)parts.push({x:R()*1100,y:R()*540,l:10+R()*16,v:(mode==="storm"?620:420)+R()*240});}
-    if(mode==="fog")for(let i=0;i<14;i++){const layer=i%3;parts.push({x:R()*1400-200,y:180+layer*110+R()*90,w:520+R()*420,h:70+R()*60,v:(4+layer*5)*(R()<.5?1:.7),a:.13+layer*.04+R()*.05,ph:R()*6.28});}
+    if(mode==="fog")for(let i=0;i<14;i++){const layer=i%3;parts.push({x:R()*1400-200,y:180+layer*110+R()*90,w:520+R()*420,h:70+R()*60,v:(16+layer*14)*(R()<.5?1:.75),a:.16+layer*.05+R()*.05,ph:R()*6.28});}
     if(mode==="cloud")for(let i=0;i<9;i++){parts.push({x:R()*1300-170,y:20+R()*190,s:.7+R()*.9,v:5+R()*9,a:.10+R()*.10,puffs:Array.from({length:5},()=>[(R()-.5)*170,(R()-.5)*34,40+R()*44])});}
     flash=0;nextBolt=performance.now()+1500+R()*3000;gust=0;
   }
@@ -394,6 +409,39 @@ kbd{font:500 11px var(--mono);border:1px solid var(--line);border-bottom-width:2
         cx.fillStyle=g;cx.fillRect(-p.w/2,-p.w/2,p.w,p.w);cx.restore();}
       const lg=cx.createLinearGradient(0,220,0,540);lg.addColorStop(0,"rgba(220,228,240,0)");lg.addColorStop(1,"rgba(220,228,240,.32)");cx.fillStyle=lg;cx.fillRect(0,220,960,320);
     }
+    if(fxOn==="clear"){
+      // Sun glare from the top-left with tapered, soft "god rays" that run past the far corner.
+      sunT+=dt;const k=gain(),sx=70,sy=-60,diag=1250;
+      puff(sx,sy,620,.34*k*(.9+.1*Math.sin(sunT*.5)),"255,236,196");puff(sx,sy,220,.5*k,"255,250,232");
+      cx.save();cx.globalCompositeOperation="lighter";cx.filter="blur(7px)";
+      for(const r of parts){const a=r.a0+Math.sin(sunT*r.sp+r.ph)*r.dr;const half=r.w*(.85+.15*Math.sin(sunT*.7+r.ph));
+        const x1=sx+Math.cos(a-half)*diag,y1=sy+Math.sin(a-half)*diag,x2=sx+Math.cos(a+half)*diag,y2=sy+Math.sin(a+half)*diag;
+        const g=cx.createLinearGradient(sx,sy,sx+Math.cos(a)*diag,sy+Math.sin(a)*diag);
+        g.addColorStop(0,`rgba(255,244,214,${r.al*k})`);g.addColorStop(.45,`rgba(255,240,205,${r.al*.45*k})`);g.addColorStop(1,"rgba(255,240,205,0)");
+        cx.fillStyle=g;cx.beginPath();cx.moveTo(sx,sy);cx.lineTo(x1,y1);cx.lineTo(x2,y2);cx.closePath();cx.fill();}
+      cx.restore();
+    }
+    if(fxOn==="night"){
+      // Moonlight from just off screen (top-left), faint twinkling stars, a shooting star every 60 seconds.
+      const k=gain();
+      const mg=cx.createRadialGradient(-80,-120,0,-80,-120,820);mg.addColorStop(0,`rgba(186,206,255,${.38*k})`);mg.addColorStop(.45,`rgba(160,186,245,${.16*k})`);mg.addColorStop(1,"rgba(160,186,245,0)");
+      cx.fillStyle=mg;cx.fillRect(0,0,960,540);
+      // Now and then a random star flares into a sparkle for about 1.5 s, then settles back.
+      if(t>nextFlare&&parts.length){const st=parts[Math.floor(Math.random()*parts.length)];if(!flares.some(f=>f.st===st))flares.push({st,life:0,dur:1.3+Math.random()*.6});nextFlare=t+1000+Math.random()*2000;}
+      for(let i=flares.length-1;i>=0;i--){const f=flares[i];f.life+=dt;const p=f.life/f.dur;if(p>=1){flares.splice(i,1);continue;}
+        const e=Math.sin(Math.PI*p),a=e*Math.max(.6,k),g=f.st,L=(6+9*e)*(g.r>1.2?1.3:1);
+        const halo=cx.createRadialGradient(g.x,g.y,0,g.x,g.y,L*1.1);halo.addColorStop(0,`rgba(${g.c},${.5*a})`);halo.addColorStop(1,`rgba(${g.c},0)`);cx.fillStyle=halo;cx.fillRect(g.x-L*1.1,g.y-L*1.1,L*2.2,L*2.2);
+        cx.save();cx.translate(g.x,g.y);cx.rotate(.12+p*.25);
+        for(const [dx,dy,len] of [[1,0,L],[0,1,L],[.7071,.7071,L*.45],[.7071,-.7071,L*.45]]){const sg=cx.createLinearGradient(-dx*len,-dy*len,dx*len,dy*len);sg.addColorStop(0,`rgba(${g.c},0)`);sg.addColorStop(.5,`rgba(${g.c},${.95*a})`);sg.addColorStop(1,`rgba(${g.c},0)`);cx.strokeStyle=sg;cx.lineWidth=len===L?1.2:.8;cx.beginPath();cx.moveTo(-dx*len,-dy*len);cx.lineTo(dx*len,dy*len);cx.stroke();}
+        cx.restore();}
+      for(const st of parts){st.ph+=dt*st.tw;const a=(.22+.5*(.5+.5*Math.sin(st.ph)))*st.b*k;cx.fillStyle=`rgba(${st.c},${a})`;cx.beginPath();cx.arc(st.x,st.y,st.r,0,6.283);cx.fill();}
+      if(t>nextShoot&&!shot){shot={x:300+Math.random()*520,y:20+Math.random()*120,vx:-(420+Math.random()*160),vy:150+Math.random()*80,life:0};nextShoot=t+60000;}
+      if(shot){shot.life+=dt;shot.x+=shot.vx*dt;shot.y+=shot.vy*dt;const fade=Math.max(0,1-shot.life/0.9);
+        const tx=shot.x-shot.vx*.28,ty=shot.y-shot.vy*.28;const g=cx.createLinearGradient(shot.x,shot.y,tx,ty);
+        g.addColorStop(0,`rgba(255,255,255,${.95*fade*Math.max(.6,k)})`);g.addColorStop(1,"rgba(255,255,255,0)");
+        cx.strokeStyle=g;cx.lineWidth=1.8;cx.lineCap="round";cx.beginPath();cx.moveTo(shot.x,shot.y);cx.lineTo(tx,ty);cx.stroke();
+        if(fade<=0)shot=null;}
+    }
     if(fxOn==="cloud"){
       cx.fillStyle="rgba(30,36,52,.10)";cx.fillRect(0,0,960,540);
       for(const c of parts){c.x+=c.v*dt;if(c.x-200*c.s>960)c.x=-260*c.s;
@@ -404,7 +452,7 @@ kbd{font:500 11px var(--mono);border:1px solid var(--line);border-bottom-width:2
   let bolt=null;
   function makeBolt(){let x=200+Math.random()*560,y=0;const pts=[[x,y]];while(y<300+Math.random()*120){x+=(Math.random()-.5)*50;y+=20+Math.random()*25;pts.push([x,y]);}return pts;}
   function fxMode(){
-    const want=S.s==="idle"&&S.v==="pro"&&S.x!=="clear"?S.x:null;
+    const want=S.s==="idle"&&S.v==="pro"?S.x:null;
     if(want===fxOn)return;
     fxOn=want;cancelAnimationFrame(raf);cx.clearRect(0,0,960,540);last=0;
     if(want){seed(want);if(reduce){frame(performance.now());cancelAnimationFrame(raf);}else raf=requestAnimationFrame(frame);}
