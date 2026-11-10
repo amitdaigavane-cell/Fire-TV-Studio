@@ -25,7 +25,8 @@ final class TvController implements Closeable {
     private JSONObject ledger;
     private AtomicFile ledgerFile;
     private final Set<String> packages=new HashSet<>(), thirdParty=new HashSet<>();
-    interface Progress {void show(String message);}
+    interface Progress {void show(String message);default void percent(int value){}}
+    static final long MAX_VIDEO=150L*1024*1024;
     private final Progress progress;
     TvController(Context context,Progress progress){this.context=context.getApplicationContext();this.progress=progress;}
     static String quote(String value){return "'"+value.replace("'","'\\''")+"'";}
@@ -128,7 +129,7 @@ final class TvController implements Closeable {
     }
     JSONObject install()throws Exception{
         ensureLedger();boolean selectedHome=servicePresent(command("settings get secure enabled_accessibility_services"));progress.show("Uploading the bundled TV Home launcher…");String path="/data/local/tmp/tvstudio-home.apk";
-        File apk=new File(context.getCacheDir(),"launcher.apk");try(InputStream in=context.getAssets().open("TV-Home.apk");OutputStream out=new FileOutputStream(apk)){copy(in,out,20*1024*1024);}try(InputStream in=new FileInputStream(apk)){adb.push(in,path,apk.length());}
+        File apk=new File(context.getCacheDir(),"launcher.apk");try(InputStream in=context.getAssets().open("TV-Home.apk");OutputStream out=new FileOutputStream(apk)){copy(in,out,20*1024*1024);}pushWithProgress(apk,path,"Uploading the bundled TV Home launcher…",20L*1024*1024);
         try{String output=command("pm install -r "+path);if(!output.contains("Success"))throw new IOException(output+". Existing launcher data was preserved; do not uninstall to work around a signing mismatch.");}finally{try{command("rm -f "+path);}catch(Exception ignored){}}
         loadPackages();command("pm grant "+HOME+" android.permission.WRITE_SECURE_SETTINGS");command("pm grant "+HOME+" android.permission.READ_LOGS");if(selectedHome){provider("home","this");JSONObject repair=provider("repairHome",null);awaitHome(repair.optLong("previousConnection"));}record("TV Home "+BuildConfig.BUNDLED_LAUNCHER_VERSION_NAME+" installed; Home switching permissions granted");return status();
     }
@@ -142,7 +143,24 @@ final class TvController implements Closeable {
     JSONObject repairHome()throws Exception{ensureLedger();command("pm grant "+HOME+" android.permission.WRITE_SECURE_SETTINGS");command("pm grant "+HOME+" android.permission.READ_LOGS");JSONObject repair=provider("repairHome",null);awaitHome(repair.optLong("previousConnection"));record("Home switching reconnected");return status();}
     JSONObject config(JSONObject value)throws Exception{ensureLedger();JSONObject result=provider("save",base64(value.toString()));record("Launcher appearance updated");return result;}
     JSONObject apps(JSONObject value)throws Exception{ensureLedger();JSONObject result=provider("appsSave",base64(value.toString()));record("Favorites and hidden apps updated");return result;}
-    JSONObject wallpaper(File file,String id)throws Exception{if(!id.matches("[a-zA-Z0-9_-]{1,48}")||file.length()>3*1024*1024)throw new IOException("Invalid wallpaper");ensureLedger();String path="/data/local/tmp/tvstudio-"+id+".jpg";try(InputStream in=new FileInputStream(file)){adb.push(in,path,file.length());}try{command("content write --uri "+PROVIDER+"/wallpaper/"+id+" < "+path);return provider("commitImage",id);}finally{try{command("rm -f "+path);}catch(Exception ignored){}}}
+    /** Push a local file to the TV, reporting progress as a percentage. */
+    private void pushWithProgress(File file,String path,String label,long max)throws Exception{
+        long length=file.length();progress.show(label);progress.percent(0);
+        final int[] last={-1};
+        try(InputStream in=new FileInputStream(file)){adb.push(in,path,length,bytes->{int pct=length==0?100:(int)(bytes*100/length);if(pct!=last[0]){last[0]=pct;progress.percent(pct);}},max);}
+        progress.percent(100);
+    }
+    /** Upload a video wallpaper: push, hand it to the launcher, then make it active. */
+    JSONObject video(File file)throws Exception{
+        if(!file.isFile()||file.length()<1024)throw new IOException("Choose a video first");
+        if(file.length()>MAX_VIDEO)throw new IOException("This video is larger than 150 MB. Choose a shorter clip.");
+        ensureLedger();String path="/data/local/tmp/tvstudio-video.mp4";
+        pushWithProgress(file,path,"Sending video to your TV… keep this phone awake",MAX_VIDEO);
+        try{progress.show("Saving video on the TV…");command("content write --uri "+PROVIDER+"/video/home < "+path);JSONObject result=provider("commitVideo",null);record("Video wallpaper set ("+(file.length()/1048576)+" MB)");return result;}
+        finally{try{command("rm -f "+path);}catch(Exception ignored){}}
+    }
+    JSONObject videoOff()throws Exception{ensureLedger();JSONObject result=provider("videoOff",null);record("Video wallpaper removed");return result;}
+    JSONObject wallpaper(File file,String id)throws Exception{if(!id.matches("[a-zA-Z0-9_-]{1,48}")||file.length()>3*1024*1024)throw new IOException("Invalid wallpaper");ensureLedger();String path="/data/local/tmp/tvstudio-"+id+".jpg";pushWithProgress(file,path,"Sending wallpaper to your TV…",3L*1024*1024);try{command("content write --uri "+PROVIDER+"/wallpaper/"+id+" < "+path);return provider("commitImage",id);}finally{try{command("rm -f "+path);}catch(Exception ignored){}}}
     JSONObject weatherRetry()throws Exception{verify();return provider("weatherRetry",null);}
     JSONObject restore()throws Exception{
         verify();if(ledger==null)throw new IOException("No restore point for this TV");JSONArray results=new JSONArray();JSONObject original=ledger.getJSONObject("packages");for(Iterator<String> it=original.keys();it.hasNext();){String pkg=it.next();try{setPackage(pkg,original.getInt(pkg));results.put(pkg+": restored");}catch(Exception e){results.put(pkg+": "+e.getMessage());}}

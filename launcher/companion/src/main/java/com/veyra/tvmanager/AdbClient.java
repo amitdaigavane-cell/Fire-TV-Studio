@@ -53,9 +53,11 @@ public final class AdbClient implements Closeable {
         }catch(IOException e){close();throw e;}
     }
     private static byte[] sync(String id,byte[] data,int length){ByteBuffer b=ByteBuffer.allocate(8+data.length).order(ByteOrder.LITTLE_ENDIAN);b.putInt(id(id)).putInt(length).put(data);return b.array();}
-    public synchronized void push(InputStream source,String path,long length)throws IOException{
+    public synchronized void push(InputStream source,String path,long length)throws IOException{push(source,path,length,null,20L*1024*1024);}
+    /** Push a file; onBytes (may be null) receives the running byte count; max is the largest allowed size. */
+    public synchronized void push(InputStream source,String path,long length,java.util.function.LongConsumer onBytes,long max)throws IOException{
         if(!path.matches("/data/local/tmp/tvstudio-[a-zA-Z0-9_.-]+"))throw new IOException("Invalid upload path");
-        try{open("sync:");byte[] name=(path+",33188").getBytes(StandardCharsets.UTF_8);write(sync("SEND",name,name.length));byte[] buffer=new byte[65536];int n;long count=0;while((n=source.read(buffer))!=-1){count+=n;if(count>length||count>20*1024*1024)throw new IOException("Upload size mismatch");write(sync("DATA",Arrays.copyOf(buffer,n),n));}if(count!=length)throw new IOException("Incomplete upload");write(sync("DONE",new byte[0],(int)(System.currentTimeMillis()/1000)));
+        try{open("sync:");byte[] name=(path+",33188").getBytes(StandardCharsets.UTF_8);write(sync("SEND",name,name.length));byte[] buffer=new byte[65536];int n;long count=0;while((n=source.read(buffer))!=-1){count+=n;if(count>length||count>max)throw new IOException("Upload size mismatch");write(sync("DATA",Arrays.copyOf(buffer,n),n));if(onBytes!=null)onBytes.accept(count);}if(count!=length)throw new IOException("Incomplete upload");write(sync("DONE",new byte[0],(int)(System.currentTimeMillis()/1000)));
             while(pending.size()<8){Message m=receive();if(m.arg1!=local)continue;if(m.command==CLSE)throw new IOException("Transfer closed before completion");if(m.command==WRTE){pending.write(m.data);acknowledge(m);}}
             byte[] response=pending.toByteArray();ByteBuffer b=ByteBuffer.wrap(response).order(ByteOrder.LITTLE_ENDIAN);int status=b.getInt();if(status!=id("OKAY"))throw new IOException("TV rejected file transfer");send(CLSE,local,remote,new byte[0]);
         }catch(IOException e){close();throw e;}

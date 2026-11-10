@@ -19,7 +19,7 @@ public final class MainActivity extends Activity {
     private TvController tv;
     private final ExecutorService worker=Executors.newSingleThreadExecutor();
     private final ExecutorService updateWorker=Executors.newSingleThreadExecutor();
-    private String pickerRequest, exportRequest, exportData, importRequest;
+    private String pickerRequest, exportRequest, exportData, importRequest, videoRequest;
     private volatile boolean destroyed;
     private volatile String updateReleaseUrl;
     private final Set<String> liveImages=new HashSet<>();
@@ -36,7 +36,7 @@ public final class MainActivity extends Activity {
                 }catch(IOException e){return new WebResourceResponse("text/plain","UTF-8",new ByteArrayInputStream(new byte[0]));}
             }
         });
-        worker.execute(this::clearAbandonedImages);tv=new TvController(this,message->event("progress",message));web.addJavascriptInterface(new Bridge(),"Studio");web.loadUrl(ORIGIN+"index.html");
+        worker.execute(this::clearAbandonedImages);tv=new TvController(this,new TvController.Progress(){@Override public void show(String message){event("progress",message);}@Override public void percent(int value){event("percent",String.valueOf(value));}});web.addJavascriptInterface(new Bridge(),"Studio");web.loadUrl(ORIGIN+"index.html");
     }
     private void event(String type,String text){try{JSONObject value=new JSONObject().put("type",type).put("message",text);runOnUiThread(()->{if(!destroyed)web.evaluateJavascript("window.studioEvent("+value+")",null);});}catch(JSONException ignored){}}
     private void reply(String id,Object result,String error){try{JSONObject value=new JSONObject().put("id",id).put("ok",error==null).put("data",result==null?JSONObject.NULL:result).put("error",error==null?JSONObject.NULL:error);runOnUiThread(()->{if(!destroyed)web.evaluateJavascript("window.studioReply("+value+")",null);});}catch(JSONException ignored){}}
@@ -67,6 +67,9 @@ public final class MainActivity extends Activity {
                     case "recoverConfig":response=tv.recoverConfig(arg.getString("choice"));break;
                     case "discardImages":discardImages(arg.getJSONArray("images"));response=new JSONObject();break;
                     case "restore":response=tv.restore();break;
+                    case "pickVideo":runOnUiThread(()->pickVideo(id));return;
+                    case "uploadVideo":File clip=new File(getCacheDir(),"video-wallpaper.mp4");try{response=tv.video(clip);}finally{clip.delete();}break;
+                    case "videoOff":response=tv.videoOff();break;
                     case "pickImages":runOnUiThread(()->pick(id,arg.optBoolean("multiple",true)));return;
                     case "upload":String image=arg.getString("image");if(!image.matches("[a-zA-Z0-9_-]{1,48}"))throw new IOException("Invalid image");response=tv.wallpaper(new File(getCacheDir(),image+".jpg"),image);break;
                     case "citySearch":response=citySearch(arg.getString("query"));break;
@@ -146,10 +149,22 @@ public final class MainActivity extends Activity {
             return images;
         }catch(Exception|OutOfMemoryError e){discardImages(created);throw e;}
     }
+    private void pickVideo(String id){if(videoRequest!=null){reply(id,null,"A video picker is already open");return;}videoRequest=id;try{startActivityForResult(new Intent(Intent.ACTION_OPEN_DOCUMENT).setType("video/*").putExtra(Intent.EXTRA_MIME_TYPES,new String[]{"video/mp4","video/x-m4v"}).addCategory(Intent.CATEGORY_OPENABLE),13);}catch(RuntimeException e){videoRequest=null;reply(id,null,"No video picker available");}}
+    /** Copy the chosen clip into this app's cache, refusing anything over 150 MB. */
+    private JSONObject importVideo(Uri uri)throws Exception{
+        File out=new File(getCacheDir(),"video-wallpaper.mp4");long total=0;String name="video";
+        try(android.database.Cursor c=getContentResolver().query(uri,new String[]{android.provider.OpenableColumns.DISPLAY_NAME},null,null,null)){if(c!=null&&c.moveToFirst()&&c.getString(0)!=null)name=c.getString(0);}catch(RuntimeException ignored){}
+        try(InputStream in=getContentResolver().openInputStream(uri);OutputStream o=new java.io.FileOutputStream(out)){
+            if(in==null)throw new IOException("Cannot read this video");byte[] buf=new byte[65536];int n;
+            while((n=in.read(buf))!=-1){total+=n;if(total>TvController.MAX_VIDEO){throw new IOException("This video is larger than 150 MB. Choose a shorter clip.");}o.write(buf,0,n);}
+        }catch(Exception e){out.delete();throw e;}
+        return new JSONObject().put("name",name).put("bytes",total);
+    }
     private void pick(String id,boolean multiple){if(pickerRequest!=null){reply(id,null,"A photo picker is already open");return;}pickerRequest=id;try{startActivityForResult(new Intent(Intent.ACTION_OPEN_DOCUMENT).setType("image/*").putExtra(Intent.EXTRA_MIME_TYPES,new String[]{"image/jpeg","image/png","image/webp"}).addCategory(Intent.CATEGORY_OPENABLE).putExtra(Intent.EXTRA_ALLOW_MULTIPLE,multiple),10);}catch(RuntimeException e){pickerRequest=null;reply(id,null,"No photo picker available");}}
     private void export(String id,String data){if(exportRequest!=null){reply(id,null,"An export is already open");return;}exportRequest=id;exportData=data;try{startActivityForResult(new Intent(Intent.ACTION_CREATE_DOCUMENT).setType("application/json").addCategory(Intent.CATEGORY_OPENABLE).putExtra(Intent.EXTRA_TITLE,"TV-Home-restore-point.json"),11);}catch(RuntimeException e){exportRequest=null;exportData=null;reply(id,null,"No document picker available");}}
     @Override protected void onActivityResult(int request,int result,Intent data){super.onActivityResult(request,result,data);
         if(request==10){String id=pickerRequest;pickerRequest=null;if(result!=RESULT_OK||data==null){reply(id,new JSONArray(),null);return;}ArrayList<Uri> uris=new ArrayList<>();if(data.getClipData()!=null)for(int i=0;i<Math.min(8,data.getClipData().getItemCount());i++)uris.add(data.getClipData().getItemAt(i).getUri());else if(data.getData()!=null)uris.add(data.getData());worker.execute(()->{try{reply(id,importImages(uris),null);}catch(Exception|OutOfMemoryError e){reply(id,null,"Could not import this image. Choose a smaller JPEG or PNG.");}});}
+        else if(request==13){String id=videoRequest;videoRequest=null;if(result!=RESULT_OK||data==null||data.getData()==null){reply(id,new JSONObject(),null);return;}Uri uri=data.getData();worker.execute(()->{try{reply(id,importVideo(uri),null);}catch(Exception e){reply(id,null,e.getMessage()==null?"Could not read this video":e.getMessage());}});}
         else if(request==12){String id=importRequest;importRequest=null;if(result!=RESULT_OK||data==null||data.getData()==null){reply(id,new JSONObject(),null);return;}Uri uri=data.getData();worker.execute(()->{try(InputStream in=getContentResolver().openInputStream(uri)){if(in==null)throw new IOException("Cannot read restore point");reply(id,tv.importRestore(TvController.read(in,2*1024*1024)),null);}catch(Exception e){reply(id,null,e.getMessage());}});}
         else if(request==11){String id=exportRequest,text=exportData;exportRequest=null;exportData=null;if(result!=RESULT_OK||data==null||data.getData()==null){reply(id,new JSONObject(),null);return;}Uri uri=data.getData();worker.execute(()->{try(OutputStream out=getContentResolver().openOutputStream(uri)){if(out==null)throw new IOException("Could not save file");out.write(text.getBytes(StandardCharsets.UTF_8));reply(id,new JSONObject().put("saved",true),null);}catch(Exception e){reply(id,null,e.getMessage());}});}
     }
